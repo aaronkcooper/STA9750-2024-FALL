@@ -9,6 +9,7 @@ In this project we are taking a deep dive into the realm of IMDB to find what mo
 ```{r output = FALSE}
 #| code-fold: true
 library(tidyverse)
+options(dplyr.summarise.inform = FALSE)
 library(DT)
 get_imdb_file <- function(fname){
   BASE_URL <- "https://datasets.imdbws.com/"
@@ -183,7 +184,7 @@ TITLE_BASICS |>
 #tt0070992
 ```
 
-```{r}
+```{r warning = FALSE, message = FALSE}
 #| code-fold: true
 Happy_Days <- TITLE_EPISODES |> 
   filter(parentTconst == "tt0070992") |> 
@@ -221,3 +222,194 @@ TITLE_BASICS |>
   filter(tconst %in% c("tt0903747","tt0111161","tt0944947","tt0068646", "tt0468569", "tt2301451")) |> 
     DT::datatable()
 ```
+
+Indeed all of these movie and tv shows are heavily acclaimed and widely known across the country and the world. One could argue that these are the top respective Movies and Tv Shows of all time.
+
+Next let's check bad movies with a significant amount of votes.
+
+```{r}
+#| code-fold: true
+TITLE_RATINGS |> 
+  filter(numVotes > 50000, success < 8) |> 
+  arrange(success) |> 
+  DT::datatable()
+```
+
+Indeed, these score quite poorly. Keep in mind that this metric because it is log transformed, the lowest movies in success are around 3, and peaks around 15.8.
+
+Now lets take a look at my favorite director, Christopher Nolan, and see how his projects fare using our metric.
+
+```{r}
+#| code-fold: true
+#NAME_BASICS |> 
+#  filter(primaryName == "Christopher Nolan")
+TITLE_RATINGS |> 
+  filter(tconst %in% c("tt6723592","tt0816692","tt1375666","tt0482571")) |> 
+  DT::datatable()
+```
+
+Indeed his famous movies are some of the all time greats, and score significantly well on our success metric. Finally, I thought it would be fun to take a look at The Room. This movie is famously one of the best "worst movies" and has garnered a cult following. Because of that, it should have poor average rating but alot of votes which will help test the robustness of our metric.
+
+```{r}
+#| code-fold: true
+#TITLE_BASICS |> 
+#  filter(primaryTitle == "The Room")
+TITLE_RATINGS |> 
+  filter(tconst == "tt0368226")  |> 
+  DT::datatable()
+```
+
+And it indeed does not score well despite it being a popular film to review. Though it has some success to take credit for considering its cult following, which is exactly what our metric aims to capture.
+
+Given that our metric is effective, let's determine what score could be considered a success on our metric.
+
+```{r}
+#| code-fold: true
+TITLE_RATINGS |> 
+  ggplot(aes(success)) + 
+  stat_function(
+    fun = dnorm,
+    args = with(TITLE_RATINGS, c(mean = mean(success), sd = sd(success)))
+  ) + theme_minimal()
+```
+
+Plotting a normal distribution of our metric, we can see the mean lies just below 10. So I think classifying a movie as a success as 10 and up would qualify as **solid** or better.
+
+## Task 4
+
+Now that we have a measure for success, lets analyze trends over genre and decade.
+
+### Most Successes for Decade
+
+```{r warning = FALSE}
+#| code-fold: true
+titles <- inner_join(TITLE_RATINGS, separate_longer_delim(TITLE_BASICS, genres, ","), by = "tconst")
+titles <- filter(titles, titleType == "movie")
+titles |> 
+  mutate(decade = signif(startYear, 3)) |> 
+  filter(success >= 10) |> 
+  group_by(decade, genres) |> 
+  summarise(successes = n()) |> 
+  arrange(desc(successes)) |> 
+  distinct(decade, .keep_all = TRUE) |> 
+  DT::datatable()
+```
+
+The most successes for every decade it seems is Drama. Note that in order to condense the genres, we had to delimit the genres that were separated by commas into multiple entries. So a single movie can have multiple genre entries, like a Romantic Comedy for example. This might have an influence on why Dramas are so prevalent as an umbrella genre.
+
+### Genres over Time
+
+```{r warning = FALSE}
+#| code-fold: true
+titles |> 
+  mutate(decade = signif(startYear, 3)) |> 
+  filter(success >= 10) |> 
+  group_by(decade, genres) |> 
+  summarise(successes = n()) |> 
+  arrange(genres) |> 
+  filter(genres %in% c("Action", "Drama", "Romance", "Documentary", "Comedy", "Western", "Biography", "History")) |> 
+  ggplot(aes(decade, successes)) +
+  geom_line(aes(color = genres))
+```
+
+When looking at how genres perform over time, I think it makes sense to focus on some of the most prominent genres as putting everything on a graph will be overly cluttered and hard to read. Given that, we can see that Drams for sure have consistently put out the most successes. While Romance movies used to be a lot more prominent in the 1900s but have considerably fallen out of favor after the turn of the century.
+
+When you take a look at Documentaries, that genre has become a lot more popular as of recently. They really weren't popular but saw a quick rise at the turn of the century and quickly ascended to the 3rd most popular genre.
+
+### Success after 2010
+
+```{r}
+#| code-fold: true
+titles <- titles |> 
+  mutate(decade = signif(startYear, 3)) |> 
+  mutate(threshold = ifelse(success >= 10, 1, 0))
+titles |> 
+  filter(startYear >= 2010) |> 
+  group_by(genres) |> 
+  summarise(successes = sum(threshold),
+            ratio = sum(threshold) / n()) |> 
+  arrange(desc(successes)) |> 
+  ggplot() +
+  geom_col(aes(successes, genres)) + 
+  theme_minimal()
+titles |> 
+  filter(startYear >= 2010) |> 
+  group_by(genres) |> 
+  summarise(successes = sum(threshold),
+            ratio = sum(threshold) / n()) |> 
+  arrange(desc(successes)) |> 
+  ggplot() +
+  geom_col(aes(ratio, genres)) +
+  theme_minimal()
+```
+
+Disregarding the NA column, its no surprise given our previous graphic that Dramas contain the largest amount of successes by sheer volume. However, if we take a look at what percentage in each genre is a success we get a better understanding of what actually performs best. Talk-Show has the best ratio but the small sample size makes it tough to look at seriously. We can see that next to it, Biographies perform exceptionally well, while also having a moderate but respectable success count.
+
+Given Biographies success and less competition, it seems like a great genre to design a movie concept around.
+
+## Task 5 - The Dream Cast
+
+### A Famous Duo
+
+For our movie I suggest we go with the prolific director-actor combo of Christopher Nolan and Christian Bale. Not only have the individually contributed to some of the best movies of all time, they also have collaborated on multiple together, producing some of the top movies of all time. To illustrate this point lets see how their movies where they both appear as director and actor fair against the average movie.
+
+```{r warning = FALSE}
+#| code-fold: true
+success_summary <- summary(titles$success)
+avg_success <- data_frame(primaryTitle = "Average Movie", success = success_summary[3])
+titles |> 
+  filter(tconst %in% c("tt0482571", "tt0372784", "tt0468569", "tt1345836")) |> 
+  distinct(tconst, .keep_all = TRUE) |> 
+  ggplot(aes(primaryTitle, success)) +
+  geom_col(fill = "red4") +
+  geom_col(data = avg_success, fill = "blue") +
+  scale_y_continuous(limits = c(0,16)) +
+  scale_color_discrete(guide = "none") +
+  labs(title = "Partnership of Christian Bale and Christopher Nolan") +
+  theme_minimal()
+```
+
+As we can see, their movies are in an elite club as some of the best movies of all time.
+
+### A Killer Biography
+
+We established before that the genre we would like to target is a Biography, a hot genre that is performing exceptionally well these days while not being over-saturated. Especially coming off the great success of Oppenheimer, Nolan would be a great pick for this movie. He proved at least with Oppenheimer how effective he can be at historical storytelling. Christian Bale is a prolific actor who has tackled many roles and certainly would be up for any challenge.
+
+Lets see which Biographies have performed the best.
+
+```{r}
+#| code-fold: true
+titles |> 
+  filter(genres == "Biography") |> 
+  arrange(desc(success)) |> 
+  head(n = 50) |> 
+  DT::datatable()
+```
+
+Two movie that stick out to me are Goodfellas and The Wolf of Wall Street. Both excellent movies. they also feature the same lead, Leonardo Dicaprio, who I think would also be a great fit for this project. We already see how successful his Biography movies are, so he would be a great addition to our team. We can see his success through his best known movies.
+
+```{r}
+#| code-fold: true
+titles |> 
+  filter(tconst %in% c("tt1375666","tt0407887","tt0120338","tt0993846")) |> 
+  distinct(tconst, .keep_all = TRUE) |> 
+  DT::datatable(
+    caption = "Leonardo DiCaprio's Feature Films"
+  )
+```
+
+As we can see, he is an extremely accomplished actor with previous success leading BioPics and is a great fit for this project.
+
+## Task 6 - Time for a Remake?
+
+When looking at the top Biographies, a great candidate for a remake stood out to me: Spartacus. This classic from 1960 has been begging to be remade and now is the time! Unfortunately the great Stanley Kubrick who directed is no longer alive, neither is the original writers or actors so we will have to go in with an all new cast. That's all right as we have selected an all-star crew to lead our new vision of Spartacus for a modern audience.
+
+## Task 7 - The Ultimate Movie Pitch
+
+Spartacus, an all time Kubrick classic from 1960, is ready to be remade. A winner of the Best Picture award in 1960, this BioPic about a slave rebellion would certainly see considerable success today. An underdog story about slaves rebelling against their masters would sell great with audiences especially today with the heightened sense of justice within modern American society.
+
+BioPics have been the most successful movie genre by a significant margin for the last decade, while remaining underutilized in the market with a lot of untapped potential. Coming off the heels off the extremely successful BioPic, Oppenheimer, we can think of no better director then Christopher Nolan to lead this project. Nolan, one of the most successful directors of our generation has enjoyed considerable box office success. Alongside him, Christian Bale who has partnered with Nolan multiple times in the past will be one of the featured actors of this film. Bale together with Nolan have been in arguably some of the greatest movies of all time and it is time for them to reunite again once more. Rounding out the crew will be Leonardo DiCaprio, who has already featured in all time great BioPics like the Wolf of Wall Street and Goodfellas. With this all-star team and proven track record, this movie is due to break the box office.
+
+Here is a quick trailer snippet to get you excited for this future blockbuster film:
+
+From director Christopher Nolan, the visionary mind between Oppenheimer; and From actor Christian Bale, beloved star of the Batman Trilogy; and From actor Leonardo DiCaprio, Hollywood icon of the Biography genre , Comes the timeless tail Spartacus A story of heorism, defiance, and tragedy. Coming soon to a theater near you.

@@ -213,22 +213,36 @@ titles |>
 #Task 5
 #Christopher Nolan
 titles |> 
-  filter(tconst %in% c("tt6723592","tt0816692","tt1375666","tt0482571")) 
+  filter(tconst %in% c("tt6723592","tt0816692","tt1375666","tt0482571")) |> 
+  distinct(tconst, .keep_all = TRUE)
 #Actors
 NAME_BASICS |> 
   filter(primaryName == "Christian Bale")
 titles |> 
   filter(tconst %in% c("tt0468569","tt0372784","tt1345836","tt0144084")) 
+#Both
+success_summary <- summary(titles$success)
+avg_success <- data_frame(primaryTitle = "Average Movie", success = success_summary[3])
+titles |> 
+  filter(tconst %in% c("tt0482571", "tt0372784", "tt0468569", "tt1345836")) |> 
+  distinct(tconst, .keep_all = TRUE) |> 
+  ggplot(aes(primaryTitle, success)) +
+  geom_col(fill = "red4") +
+  geom_col(data = avg_success, fill = "blue") +
+  scale_y_continuous(limits = c(0,16)) +
+  scale_color_discrete(guide = "none") +
+  labs(title = "Partnership of Christian Bale and Christopher Nolan") +
+  theme_minimal()
 titles |> 
   filter(genres == "Biography") |> 
   arrange(desc(success))
 NAME_BASICS |> 
   filter(primaryName == "Leonardo DiCaprio")
 titles |> 
-  filter(tconst %in% c("tt1375666","tt0407887","tt0120338","tt0993846", "tt0468569","tt0372784","tt1345836","tt0144084")) |> 
+  filter(tconst %in% c("tt1375666","tt0407887","tt0120338","tt0993846")) |> 
   distinct(tconst, .keep_all = TRUE)
 #Task 6
 titles |> 
   arrange(desc(success)) |> 
   distinct(tconst, .keep_all = TRUE)
-#Schindler's List
+#Spartacus
