@@ -120,12 +120,13 @@ As we see there are 132369 movies, 30043 TV series and 156967 TV episodes in our
 
 Because in the dataset NA values are treated for people who haven't died yer, or have an unknown death date we cant exactly find the answer to this using our dataset. Doing a little research shows that the oldest living actress is Brenda Miller born in 1918.
 
-```{r}
+```{r output = FALSE}
 #| code-fold: true
 NAME_BASICS |> 
   filter(is.na(deathYear), birthYear > 1917) |> 
   arrange(birthYear) |> 
-  head()
+  head() |> 
+    DT::datatable()
 ```
 
 ### There is one TV Episode in this data set with a perfect 10/10 rating and at least 200,000 IMDb ratings. What is it? What series does it belong to?
@@ -135,7 +136,8 @@ NAME_BASICS |>
 #TITLE_RATINGS |> 
 #  filter(numVotes > 200000, averageRating == 10)
 TITLE_BASICS |> 
-  filter(tconst == "tt2301451")
+  filter(tconst == "tt2301451") |> 
+    DT::datatable()
 ```
 
 To no surprise for any Breaking Bad fan, the 10/10 episode is Ozymandias from said tv show, Breaking Bad.
@@ -147,19 +149,23 @@ To no surprise for any Breaking Bad fan, the 10/10 episode is Ozymandias from sa
 #NAME_BASICS |> 
 #  filter(primaryName == "Mark Hamill")
 TITLE_BASICS |> 
-  filter(tconst %in% c("tt0076759","tt2527336","tt0080684","tt0086190"))
+  filter(tconst %in% c("tt0076759","tt2527336","tt0080684","tt0086190")) |> 
+    DT::datatable()
 ```
 
 No Surprise here, Star Wars episodes IV,V,VI and VIII.
 
 ### What TV series, with more than 12 episodes, has the highest *average* rating?
 
-```{r}
-#| code-fold: true
+```{r output = FALSE, echo = FALSE}
 TvSeries <- TITLE_EPISODES |> 
   group_by(parentTconst) |> 
   summarise(count = n()) |> 
   filter(count > 12)
+```
+
+```{r}
+#| code-fold: true
 TITLE_RATINGS |> 
   filter(tconst %in% TvSeries$parentTconst) |> 
   group_by(tconst) |> 
@@ -169,15 +175,16 @@ TITLE_RATINGS |>
   DT::datatable()
 ```
 
-Jogando Fodoacci
-
 ### Is it true that episodes from later seasons of *Happy Days* have lower average ratings than the early seasons?
 
-```{r}
-#| code-fold: true
+```{r output = FALSE, echo = FALSE}
 TITLE_BASICS |> 
   filter(primaryTitle == "Happy Days")
 #tt0070992
+```
+
+```{r}
+#| code-fold: true
 Happy_Days <- TITLE_EPISODES |> 
   filter(parentTconst == "tt0070992") |> 
   arrange(seasonNumber, episodeNumber) |> 
@@ -201,3 +208,16 @@ To solve this issue, we will create a metric using log transformation to give so
 $$
 Success = averageRating * (1 + log_{10}(numVotes))
 $$
+
+### Metric Validation
+
+To make sure our metric is accurate, lets check the top movies and see whether they were box offices successus or not.
+
+```{r}
+#| code-fold: true
+TITLE_RATINGS <- TITLE_RATINGS |> 
+  mutate(success = averageRating * 1+log10(numVotes))
+TITLE_BASICS |> 
+  filter(tconst %in% c("tt0903747","tt0111161","tt0944947","tt0068646", "tt0468569", "tt2301451")) |> 
+    DT::datatable()
+```

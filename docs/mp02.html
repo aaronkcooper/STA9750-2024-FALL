@@ -252,8 +252,8 @@ window.Quarto = {
 <span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>  DT<span class="sc">::</span><span class="fu">datatable</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output-display">
-<div class="datatables html-widget html-fill-item" id="htmlwidget-3add5fb61f6abb877b7e" style="width:100%;height:auto;"></div>
-<script type="application/json" data-for="htmlwidget-3add5fb61f6abb877b7e">{"x":{"filter":"none","vertical":false,"data":[["1","2","3","4","5","6","7","8","9","10"],["movie","short","tvEpisode","tvMiniSeries","tvMovie","tvSeries","tvShort","tvSpecial","video","videoGame"],[132369,16746,156967,5940,15057,30042,410,3069,9353,4695]],"container":"<table class=\"display\">\n  <thead>\n    <tr>\n      <th> <\/th>\n      <th>titleType<\/th>\n      <th>n<\/th>\n    <\/tr>\n  <\/thead>\n<\/table>","options":{"columnDefs":[{"className":"dt-right","targets":2},{"orderable":false,"targets":0},{"name":" ","targets":0},{"name":"titleType","targets":1},{"name":"n","targets":2}],"order":[],"autoWidth":false,"orderClasses":false}},"evals":[],"jsHooks":[]}</script>
+<div class="datatables html-widget html-fill-item" id="htmlwidget-ee4ab44a191aaebce404" style="width:100%;height:auto;"></div>
+<script type="application/json" data-for="htmlwidget-ee4ab44a191aaebce404">{"x":{"filter":"none","vertical":false,"data":[["1","2","3","4","5","6","7","8","9","10"],["movie","short","tvEpisode","tvMiniSeries","tvMovie","tvSeries","tvShort","tvSpecial","video","videoGame"],[132369,16746,156967,5940,15057,30042,410,3069,9353,4695]],"container":"<table class=\"display\">\n  <thead>\n    <tr>\n      <th> <\/th>\n      <th>titleType<\/th>\n      <th>n<\/th>\n    <\/tr>\n  <\/thead>\n<\/table>","options":{"columnDefs":[{"className":"dt-right","targets":2},{"orderable":false,"targets":0},{"name":" ","targets":0},{"name":"titleType","targets":1},{"name":"n","targets":2}],"order":[],"autoWidth":false,"orderClasses":false}},"evals":[],"jsHooks":[]}</script>
 </div>
 </div>
 <p>As we see there are 132369 movies, 30043 TV series and 156967 TV episodes in our data set.</p>
@@ -267,31 +267,9 @@ window.Quarto = {
 <div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>NAME_BASICS <span class="sc">|&gt;</span> </span>
 <span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="fu">is.na</span>(deathYear), birthYear <span class="sc">&gt;</span> <span class="dv">1917</span>) <span class="sc">|&gt;</span> </span>
 <span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arrange</span>(birthYear) <span class="sc">|&gt;</span> </span>
-<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">head</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">head</span>() <span class="sc">|&gt;</span> </span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>    DT<span class="sc">::</span><span class="fu">datatable</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
-<div class="cell-output cell-output-stdout">
-<pre><code>     nconst           primaryName birthYear deathYear
-1 nm0019619          Orest Alikin      1918        NA
-2 nm0024254   Zohrabai Ambalawali      1918        NA
-3 nm0031652       Nemesio Antúnez      1918        NA
-4 nm0069997          Mario Maffei      1918        NA
-5 nm0078185      Mario Bertolazzi      1918        NA
-6 nm0097252 Yekaterina Borovskaya      1918        NA
-                               primaryProfession
-1 set_decorator,production_designer,art_director
-2              music_department,actor,soundtrack
-3                                          actor
-4                assistant_director,actor,writer
-5           composer,music_department,soundtrack
-6                                        actress
-                           knownForTitles
-1 tt0060471,tt0057520,tt0054449,tt0081294
-2 tt0038302,tt0037213,tt0154026,tt0137947
-3 tt0070959,tt0230891,tt0068558,tt0076586
-4 tt0290174,tt0062389,tt0058496,tt1320174
-5 tt0071185,tt0059517,tt0069364,tt0068460
-6 tt0314369,tt0067745,tt0313897,tt0168083</code></pre>
-</div>
 </div>
 </section>
 <section id="there-is-one-tv-episode-in-this-data-set-with-a-perfect-1010-rating-and-at-least-200000-imdb-ratings.-what-is-it-what-series-does-it-belong-to" class="level3">
@@ -299,16 +277,15 @@ window.Quarto = {
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="co">#TITLE_RATINGS |&gt; </span></span>
-<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="co">#  filter(numVotes &gt; 200000, averageRating == 10)</span></span>
-<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>TITLE_BASICS <span class="sc">|&gt;</span> </span>
-<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(tconst <span class="sc">==</span> <span class="st">"tt2301451"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co">#TITLE_RATINGS |&gt; </span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="co">#  filter(numVotes &gt; 200000, averageRating == 10)</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>TITLE_BASICS <span class="sc">|&gt;</span> </span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(tconst <span class="sc">==</span> <span class="st">"tt2301451"</span>) <span class="sc">|&gt;</span> </span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>    DT<span class="sc">::</span><span class="fu">datatable</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
-<div class="cell-output cell-output-stdout">
-<pre><code>     tconst titleType primaryTitle originalTitle isAdult startYear endYear
-1 tt2301451 tvEpisode   Ozymandias    Ozymandias   FALSE      2013      NA
-  runtimeMinutes               genres
-1             47 Crime,Drama,Thriller</code></pre>
+<div class="cell-output-display">
+<div class="datatables html-widget html-fill-item" id="htmlwidget-79805f7ea883b3a1aa57" style="width:100%;height:auto;"></div>
+<script type="application/json" data-for="htmlwidget-79805f7ea883b3a1aa57">{"x":{"filter":"none","vertical":false,"data":[["1"],["tt2301451"],["tvEpisode"],["Ozymandias"],["Ozymandias"],[false],[2013],[null],[47],["Crime,Drama,Thriller"]],"container":"<table class=\"display\">\n  <thead>\n    <tr>\n      <th> <\/th>\n      <th>tconst<\/th>\n      <th>titleType<\/th>\n      <th>primaryTitle<\/th>\n      <th>originalTitle<\/th>\n      <th>isAdult<\/th>\n      <th>startYear<\/th>\n      <th>endYear<\/th>\n      <th>runtimeMinutes<\/th>\n      <th>genres<\/th>\n    <\/tr>\n  <\/thead>\n<\/table>","options":{"columnDefs":[{"className":"dt-right","targets":[6,7,8]},{"orderable":false,"targets":0},{"name":" ","targets":0},{"name":"tconst","targets":1},{"name":"titleType","targets":2},{"name":"primaryTitle","targets":3},{"name":"originalTitle","targets":4},{"name":"isAdult","targets":5},{"name":"startYear","targets":6},{"name":"endYear","targets":7},{"name":"runtimeMinutes","targets":8},{"name":"genres","targets":9}],"order":[],"autoWidth":false,"orderClasses":false}},"evals":[],"jsHooks":[]}</script>
 </div>
 </div>
 <p>To no surprise for any Breaking Bad fan, the 10/10 episode is Ozymandias from said tv show, Breaking Bad.</p>
@@ -318,27 +295,15 @@ window.Quarto = {
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="co">#NAME_BASICS |&gt; </span></span>
-<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="co">#  filter(primaryName == "Mark Hamill")</span></span>
-<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>TITLE_BASICS <span class="sc">|&gt;</span> </span>
-<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(tconst <span class="sc">%in%</span> <span class="fu">c</span>(<span class="st">"tt0076759"</span>,<span class="st">"tt2527336"</span>,<span class="st">"tt0080684"</span>,<span class="st">"tt0086190"</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="co">#NAME_BASICS |&gt; </span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="co">#  filter(primaryName == "Mark Hamill")</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>TITLE_BASICS <span class="sc">|&gt;</span> </span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(tconst <span class="sc">%in%</span> <span class="fu">c</span>(<span class="st">"tt0076759"</span>,<span class="st">"tt2527336"</span>,<span class="st">"tt0080684"</span>,<span class="st">"tt0086190"</span>)) <span class="sc">|&gt;</span> </span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>    DT<span class="sc">::</span><span class="fu">datatable</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
-<div class="cell-output cell-output-stdout">
-<pre><code>     tconst titleType                                   primaryTitle
-1 tt0076759     movie             Star Wars: Episode IV - A New Hope
-2 tt0080684     movie Star Wars: Episode V - The Empire Strikes Back
-3 tt0086190     movie     Star Wars: Episode VI - Return of the Jedi
-4 tt2527336     movie        Star Wars: Episode VIII - The Last Jedi
-                                   originalTitle isAdult startYear endYear
-1                                      Star Wars   FALSE      1977      NA
-2 Star Wars: Episode V - The Empire Strikes Back   FALSE      1980      NA
-3     Star Wars: Episode VI - Return of the Jedi   FALSE      1983      NA
-4        Star Wars: Episode VIII - The Last Jedi   FALSE      2017      NA
-  runtimeMinutes                   genres
-1            121 Action,Adventure,Fantasy
-2            124 Action,Adventure,Fantasy
-3            131 Action,Adventure,Fantasy
-4            152 Action,Adventure,Fantasy</code></pre>
+<div class="cell-output-display">
+<div class="datatables html-widget html-fill-item" id="htmlwidget-523a977408ee510e1eee" style="width:100%;height:auto;"></div>
+<script type="application/json" data-for="htmlwidget-523a977408ee510e1eee">{"x":{"filter":"none","vertical":false,"data":[["1","2","3","4"],["tt0076759","tt0080684","tt0086190","tt2527336"],["movie","movie","movie","movie"],["Star Wars: Episode IV - A New Hope","Star Wars: Episode V - The Empire Strikes Back","Star Wars: Episode VI - Return of the Jedi","Star Wars: Episode VIII - The Last Jedi"],["Star Wars","Star Wars: Episode V - The Empire Strikes Back","Star Wars: Episode VI - Return of the Jedi","Star Wars: Episode VIII - The Last Jedi"],[false,false,false,false],[1977,1980,1983,2017],[null,null,null,null],[121,124,131,152],["Action,Adventure,Fantasy","Action,Adventure,Fantasy","Action,Adventure,Fantasy","Action,Adventure,Fantasy"]],"container":"<table class=\"display\">\n  <thead>\n    <tr>\n      <th> <\/th>\n      <th>tconst<\/th>\n      <th>titleType<\/th>\n      <th>primaryTitle<\/th>\n      <th>originalTitle<\/th>\n      <th>isAdult<\/th>\n      <th>startYear<\/th>\n      <th>endYear<\/th>\n      <th>runtimeMinutes<\/th>\n      <th>genres<\/th>\n    <\/tr>\n  <\/thead>\n<\/table>","options":{"columnDefs":[{"className":"dt-right","targets":[6,7,8]},{"orderable":false,"targets":0},{"name":" ","targets":0},{"name":"tconst","targets":1},{"name":"titleType","targets":2},{"name":"primaryTitle","targets":3},{"name":"originalTitle","targets":4},{"name":"isAdult","targets":5},{"name":"startYear","targets":6},{"name":"endYear","targets":7},{"name":"runtimeMinutes","targets":8},{"name":"genres","targets":9}],"order":[],"autoWidth":false,"orderClasses":false}},"evals":[],"jsHooks":[]}</script>
 </div>
 </div>
 <p>No Surprise here, Star Wars episodes IV,V,VI and VIII.</p>
@@ -348,68 +313,35 @@ window.Quarto = {
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>TvSeries <span class="ot">&lt;-</span> TITLE_EPISODES <span class="sc">|&gt;</span> </span>
-<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(parentTconst) <span class="sc">|&gt;</span> </span>
-<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(<span class="at">count =</span> <span class="fu">n</span>()) <span class="sc">|&gt;</span> </span>
-<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(count <span class="sc">&gt;</span> <span class="dv">12</span>)</span>
-<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>TITLE_RATINGS <span class="sc">|&gt;</span> </span>
-<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(tconst <span class="sc">%in%</span> TvSeries<span class="sc">$</span>parentTconst) <span class="sc">|&gt;</span> </span>
-<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(tconst) <span class="sc">|&gt;</span> </span>
-<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(<span class="at">avgRating =</span> <span class="fu">mean</span>(averageRating)) <span class="sc">|&gt;</span> </span>
-<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arrange</span>(<span class="fu">desc</span>(avgRating)) <span class="sc">|&gt;</span> </span>
-<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">head</span>() <span class="sc">|&gt;</span> </span>
-<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a>  DT<span class="sc">::</span><span class="fu">datatable</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>TITLE_RATINGS <span class="sc">|&gt;</span> </span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(tconst <span class="sc">%in%</span> TvSeries<span class="sc">$</span>parentTconst) <span class="sc">|&gt;</span> </span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(tconst) <span class="sc">|&gt;</span> </span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(<span class="at">avgRating =</span> <span class="fu">mean</span>(averageRating)) <span class="sc">|&gt;</span> </span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arrange</span>(<span class="fu">desc</span>(avgRating)) <span class="sc">|&gt;</span> </span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">head</span>() <span class="sc">|&gt;</span> </span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>  DT<span class="sc">::</span><span class="fu">datatable</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output-display">
-<div class="datatables html-widget html-fill-item" id="htmlwidget-17b92a8745b80c5c594c" style="width:100%;height:auto;"></div>
-<script type="application/json" data-for="htmlwidget-17b92a8745b80c5c594c">{"x":{"filter":"none","vertical":false,"data":[["1","2","3","4","5","6"],["tt23028046","tt15613780","tt7151672","tt8560108","tt8560994","tt10203450"],[9.800000000000001,9.699999999999999,9.699999999999999,9.699999999999999,9.699999999999999,9.6]],"container":"<table class=\"display\">\n  <thead>\n    <tr>\n      <th> <\/th>\n      <th>tconst<\/th>\n      <th>avgRating<\/th>\n    <\/tr>\n  <\/thead>\n<\/table>","options":{"columnDefs":[{"className":"dt-right","targets":2},{"orderable":false,"targets":0},{"name":" ","targets":0},{"name":"tconst","targets":1},{"name":"avgRating","targets":2}],"order":[],"autoWidth":false,"orderClasses":false}},"evals":[],"jsHooks":[]}</script>
+<div class="datatables html-widget html-fill-item" id="htmlwidget-4bb93de4985062d226d9" style="width:100%;height:auto;"></div>
+<script type="application/json" data-for="htmlwidget-4bb93de4985062d226d9">{"x":{"filter":"none","vertical":false,"data":[["1","2","3","4","5","6"],["tt23028046","tt15613780","tt7151672","tt8560108","tt8560994","tt10203450"],[9.800000000000001,9.699999999999999,9.699999999999999,9.699999999999999,9.699999999999999,9.6]],"container":"<table class=\"display\">\n  <thead>\n    <tr>\n      <th> <\/th>\n      <th>tconst<\/th>\n      <th>avgRating<\/th>\n    <\/tr>\n  <\/thead>\n<\/table>","options":{"columnDefs":[{"className":"dt-right","targets":2},{"orderable":false,"targets":0},{"name":" ","targets":0},{"name":"tconst","targets":1},{"name":"avgRating","targets":2}],"order":[],"autoWidth":false,"orderClasses":false}},"evals":[],"jsHooks":[]}</script>
 </div>
 </div>
-<p>Jogando Fodoacci</p>
 </section>
 <section id="is-it-true-that-episodes-from-later-seasons-of-happy-days-have-lower-average-ratings-than-the-early-seasons" class="level3">
 <h3 class="anchored" data-anchor-id="is-it-true-that-episodes-from-later-seasons-of-happy-days-have-lower-average-ratings-than-the-early-seasons">Is it true that episodes from later seasons of <em>Happy Days</em> have lower average ratings than the early seasons?</h3>
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>TITLE_BASICS <span class="sc">|&gt;</span> </span>
-<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(primaryTitle <span class="sc">==</span> <span class="st">"Happy Days"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-</details>
-<div class="cell-output cell-output-stdout">
-<pre><code>     tconst titleType primaryTitle   originalTitle isAdult startYear endYear
-1 tt0020949     movie   Happy Days      Happy Days   FALSE      1929      NA
-2 tt0070992  tvSeries   Happy Days      Happy Days   FALSE      1974    1984
-3 tt0102851     movie   Happy Days Schastlivye dni   FALSE      1991      NA
-4 tt0146848     short   Happy Days      Happy Days   FALSE      1936      NA
-5 tt0263422   tvMovie   Happy Days      Happy Days   FALSE      2000      NA
-6 tt0473954     short   Happy Days      Happy Days   FALSE      1926      NA
-7 tt0765833     movie   Happy Days   Neseli Günler   FALSE      1978      NA
-8 tt1214961     movie   Happy Days      Happy Days   FALSE      2007      NA
-9 tt1437484  tvSeries   Happy Days      Happy Days   FALSE      2008      NA
-  runtimeMinutes                 genres
-1             80 Comedy,Musical,Romance
-2             30    Comedy,Family,Music
-3             86                  Drama
-4              9        Animation,Short
-5             78                  Drama
-6             14           Comedy,Short
-7             95    Comedy,Drama,Family
-8            153                  Drama
-9             NA                 Comedy</code></pre>
-</div>
-<details class="code-fold">
-<summary>Code</summary>
-<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="co">#tt0070992</span></span>
-<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>Happy_Days <span class="ot">&lt;-</span> TITLE_EPISODES <span class="sc">|&gt;</span> </span>
-<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(parentTconst <span class="sc">==</span> <span class="st">"tt0070992"</span>) <span class="sc">|&gt;</span> </span>
-<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arrange</span>(seasonNumber, episodeNumber) <span class="sc">|&gt;</span> </span>
-<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">totalEpisodeNum =</span> <span class="fu">row_number</span>())</span>
-<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a>Happy_Days <span class="ot">&lt;-</span> <span class="fu">inner_join</span>(Happy_Days, TITLE_RATINGS, <span class="at">by =</span> <span class="st">"tconst"</span>)</span>
-<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a>Happy_Days <span class="sc">|&gt;</span> </span>
-<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(totalEpisodeNum, averageRating)) <span class="sc">+</span></span>
-<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>() <span class="sc">+</span></span>
-<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_smooth</span>() <span class="sc">+</span></span>
-<span id="cb14-11"><a href="#cb14-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>Happy_Days <span class="ot">&lt;-</span> TITLE_EPISODES <span class="sc">|&gt;</span> </span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(parentTconst <span class="sc">==</span> <span class="st">"tt0070992"</span>) <span class="sc">|&gt;</span> </span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arrange</span>(seasonNumber, episodeNumber) <span class="sc">|&gt;</span> </span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">totalEpisodeNum =</span> <span class="fu">row_number</span>())</span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>Happy_Days <span class="ot">&lt;-</span> <span class="fu">inner_join</span>(Happy_Days, TITLE_RATINGS, <span class="at">by =</span> <span class="st">"tconst"</span>)</span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>Happy_Days <span class="sc">|&gt;</span> </span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(totalEpisodeNum, averageRating)) <span class="sc">+</span></span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>() <span class="sc">+</span></span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_smooth</span>() <span class="sc">+</span></span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output cell-output-stderr">
 <pre><code>`geom_smooth()` using method = 'loess' and formula = 'y ~ x'</code></pre>
@@ -417,7 +349,7 @@ window.Quarto = {
 <div class="cell-output-display">
 <div>
 <figure class="figure">
-<p><img src="mp02_files/figure-html/unnamed-chunk-8-1.png" class="img-fluid figure-img" width="672"></p>
+<p><img src="mp02_files/figure-html/unnamed-chunk-10-1.png" class="img-fluid figure-img" width="672"></p>
 </figure>
 </div>
 </div>
@@ -432,6 +364,24 @@ window.Quarto = {
 <p><span class="math display">\[
 Success = averageRating * (1 + log_{10}(numVotes))
 \]</span></p>
+<section id="metric-validation" class="level3">
+<h3 class="anchored" data-anchor-id="metric-validation">Metric Validation</h3>
+<p>To make sure our metric is accurate, lets check the top movies and see whether they were box offices successus or not.</p>
+<div class="cell">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>TITLE_RATINGS <span class="ot">&lt;-</span> TITLE_RATINGS <span class="sc">|&gt;</span> </span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">success =</span> averageRating <span class="sc">*</span> <span class="dv">1</span><span class="sc">+</span><span class="fu">log10</span>(numVotes))</span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>TITLE_BASICS <span class="sc">|&gt;</span> </span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(tconst <span class="sc">%in%</span> <span class="fu">c</span>(<span class="st">"tt0903747"</span>,<span class="st">"tt0111161"</span>,<span class="st">"tt0944947"</span>,<span class="st">"tt0068646"</span>, <span class="st">"tt0468569"</span>, <span class="st">"tt2301451"</span>)) <span class="sc">|&gt;</span> </span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>    DT<span class="sc">::</span><span class="fu">datatable</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<div class="datatables html-widget html-fill-item" id="htmlwidget-590070a03b0ee57a275c" style="width:100%;height:auto;"></div>
+<script type="application/json" data-for="htmlwidget-590070a03b0ee57a275c">{"x":{"filter":"none","vertical":false,"data":[["1","2","3","4","5","6"],["tt0068646","tt0111161","tt0468569","tt0903747","tt0944947","tt2301451"],["movie","movie","movie","tvSeries","tvSeries","tvEpisode"],["The Godfather","The Shawshank Redemption","The Dark Knight","Breaking Bad","Game of Thrones","Ozymandias"],["The Godfather","The Shawshank Redemption","The Dark Knight","Breaking Bad","Game of Thrones","Ozymandias"],[false,false,false,false,false,false],[1972,1994,2008,2008,2011,2013],[null,null,null,2013,2019,null],[175,142,152,45,60,47],["Crime,Drama","Drama","Action,Crime,Drama","Crime,Drama,Thriller","Action,Adventure,Drama","Crime,Drama,Thriller"]],"container":"<table class=\"display\">\n  <thead>\n    <tr>\n      <th> <\/th>\n      <th>tconst<\/th>\n      <th>titleType<\/th>\n      <th>primaryTitle<\/th>\n      <th>originalTitle<\/th>\n      <th>isAdult<\/th>\n      <th>startYear<\/th>\n      <th>endYear<\/th>\n      <th>runtimeMinutes<\/th>\n      <th>genres<\/th>\n    <\/tr>\n  <\/thead>\n<\/table>","options":{"columnDefs":[{"className":"dt-right","targets":[6,7,8]},{"orderable":false,"targets":0},{"name":" ","targets":0},{"name":"tconst","targets":1},{"name":"titleType","targets":2},{"name":"primaryTitle","targets":3},{"name":"originalTitle","targets":4},{"name":"isAdult","targets":5},{"name":"startYear","targets":6},{"name":"endYear","targets":7},{"name":"runtimeMinutes","targets":8},{"name":"genres","targets":9}],"order":[],"autoWidth":false,"orderClasses":false}},"evals":[],"jsHooks":[]}</script>
+</div>
+</div>
+</section>
 </section>
 </section>
 
