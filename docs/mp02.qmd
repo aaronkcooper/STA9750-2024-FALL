@@ -1,5 +1,5 @@
 ---
-title: "Mini Project #1"
+title: "Mini Project #2"
 ---
 
 # What Makes a Successful Movie?
@@ -193,3 +193,11 @@ Happy_Days |>
 It is mostly true that newer the middle of the series run Happy Days steadily dropped off, however by the end of the series it saw some recovery in quality.
 
 ## Task 3
+
+To quantify the success we need to find some way of measuring success based off of average rating and the number of votes. If we simply multiplied the two, it may unfairly inflate bad movies who simply have a high amount of engagement in voting. However, generally movies with more votes should have a higher weighting, because when comparing two movies with the same average rating, the one with higher votes it is a lot more impressive to hold that rating when the sample size is much larger.
+
+To solve this issue, we will create a metric using log transformation to give some weight to number of votes but not have it dominate the metric.
+
+$$
+Success = averageRating * (1 + log_{10}(numVotes))
+$$

@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>Mini Project #1</title>
+<title>Mini Project #2</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -78,6 +78,35 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <link href="mp02_files/libs/crosstalk-1.2.1/css/crosstalk.min.css" rel="stylesheet">
 <script src="mp02_files/libs/crosstalk-1.2.1/js/crosstalk.min.js"></script>
 
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN") {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
 
 </head>
 
@@ -89,7 +118,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 <header id="title-block-header" class="quarto-title-block default">
 <div class="quarto-title">
-<h1 class="title">Mini Project #1</h1>
+<h1 class="title">Mini Project #2</h1>
 </div>
 
 
@@ -223,8 +252,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>  DT<span class="sc">::</span><span class="fu">datatable</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output-display">
-<div class="datatables html-widget html-fill-item" id="htmlwidget-782b49e2bf8c7a0e9317" style="width:100%;height:auto;"></div>
-<script type="application/json" data-for="htmlwidget-782b49e2bf8c7a0e9317">{"x":{"filter":"none","vertical":false,"data":[["1","2","3","4","5","6","7","8","9","10"],["movie","short","tvEpisode","tvMiniSeries","tvMovie","tvSeries","tvShort","tvSpecial","video","videoGame"],[132369,16746,156967,5940,15057,30042,410,3069,9353,4695]],"container":"<table class=\"display\">\n  <thead>\n    <tr>\n      <th> <\/th>\n      <th>titleType<\/th>\n      <th>n<\/th>\n    <\/tr>\n  <\/thead>\n<\/table>","options":{"columnDefs":[{"className":"dt-right","targets":2},{"orderable":false,"targets":0},{"name":" ","targets":0},{"name":"titleType","targets":1},{"name":"n","targets":2}],"order":[],"autoWidth":false,"orderClasses":false}},"evals":[],"jsHooks":[]}</script>
+<div class="datatables html-widget html-fill-item" id="htmlwidget-3add5fb61f6abb877b7e" style="width:100%;height:auto;"></div>
+<script type="application/json" data-for="htmlwidget-3add5fb61f6abb877b7e">{"x":{"filter":"none","vertical":false,"data":[["1","2","3","4","5","6","7","8","9","10"],["movie","short","tvEpisode","tvMiniSeries","tvMovie","tvSeries","tvShort","tvSpecial","video","videoGame"],[132369,16746,156967,5940,15057,30042,410,3069,9353,4695]],"container":"<table class=\"display\">\n  <thead>\n    <tr>\n      <th> <\/th>\n      <th>titleType<\/th>\n      <th>n<\/th>\n    <\/tr>\n  <\/thead>\n<\/table>","options":{"columnDefs":[{"className":"dt-right","targets":2},{"orderable":false,"targets":0},{"name":" ","targets":0},{"name":"titleType","targets":1},{"name":"n","targets":2}],"order":[],"autoWidth":false,"orderClasses":false}},"evals":[],"jsHooks":[]}</script>
 </div>
 </div>
 <p>As we see there are 132369 movies, 30043 TV series and 156967 TV episodes in our data set.</p>
@@ -332,8 +361,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a>  DT<span class="sc">::</span><span class="fu">datatable</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output-display">
-<div class="datatables html-widget html-fill-item" id="htmlwidget-d1debe502374367d44fa" style="width:100%;height:auto;"></div>
-<script type="application/json" data-for="htmlwidget-d1debe502374367d44fa">{"x":{"filter":"none","vertical":false,"data":[["1","2","3","4","5","6"],["tt23028046","tt15613780","tt7151672","tt8560108","tt8560994","tt10203450"],[9.800000000000001,9.699999999999999,9.699999999999999,9.699999999999999,9.699999999999999,9.6]],"container":"<table class=\"display\">\n  <thead>\n    <tr>\n      <th> <\/th>\n      <th>tconst<\/th>\n      <th>avgRating<\/th>\n    <\/tr>\n  <\/thead>\n<\/table>","options":{"columnDefs":[{"className":"dt-right","targets":2},{"orderable":false,"targets":0},{"name":" ","targets":0},{"name":"tconst","targets":1},{"name":"avgRating","targets":2}],"order":[],"autoWidth":false,"orderClasses":false}},"evals":[],"jsHooks":[]}</script>
+<div class="datatables html-widget html-fill-item" id="htmlwidget-17b92a8745b80c5c594c" style="width:100%;height:auto;"></div>
+<script type="application/json" data-for="htmlwidget-17b92a8745b80c5c594c">{"x":{"filter":"none","vertical":false,"data":[["1","2","3","4","5","6"],["tt23028046","tt15613780","tt7151672","tt8560108","tt8560994","tt10203450"],[9.800000000000001,9.699999999999999,9.699999999999999,9.699999999999999,9.699999999999999,9.6]],"container":"<table class=\"display\">\n  <thead>\n    <tr>\n      <th> <\/th>\n      <th>tconst<\/th>\n      <th>avgRating<\/th>\n    <\/tr>\n  <\/thead>\n<\/table>","options":{"columnDefs":[{"className":"dt-right","targets":2},{"orderable":false,"targets":0},{"name":" ","targets":0},{"name":"tconst","targets":1},{"name":"avgRating","targets":2}],"order":[],"autoWidth":false,"orderClasses":false}},"evals":[],"jsHooks":[]}</script>
 </div>
 </div>
 <p>Jogando Fodoacci</p>
@@ -398,6 +427,11 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </section>
 <section id="task-3" class="level2">
 <h2 class="anchored" data-anchor-id="task-3">Task 3</h2>
+<p>To quantify the success we need to find some way of measuring success based off of average rating and the number of votes. If we simply multiplied the two, it may unfairly inflate bad movies who simply have a high amount of engagement in voting. However, generally movies with more votes should have a higher weighting, because when comparing two movies with the same average rating, the one with higher votes it is a lot more impressive to hold that rating when the sample size is much larger.</p>
+<p>To solve this issue, we will create a metric using log transformation to give some weight to number of votes but not have it dominate the metric.</p>
+<p><span class="math display">\[
+Success = averageRating * (1 + log_{10}(numVotes))
+\]</span></p>
 </section>
 </section>
 
