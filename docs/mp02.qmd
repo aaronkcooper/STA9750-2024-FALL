@@ -1,3 +1,195 @@
 ---
 title: "Mini Project #1"
 ---
+
+# What Makes a Successful Movie?
+
+In this project we are taking a deep dive into the realm of IMDB to find what movies are highly rated and successful. Afterwards we are going to based on our analysis create a movie pitch for a brand new remake that will blow Hollywood execs out of the water.
+
+```{r output = FALSE}
+#| code-fold: true
+library(tidyverse)
+library(DT)
+get_imdb_file <- function(fname){
+  BASE_URL <- "https://datasets.imdbws.com/"
+  fname_ext <- paste0(fname, ".tsv.gz")
+  if(!file.exists(fname_ext)){
+    FILE_URL <- paste0(BASE_URL, fname_ext)
+    download.file(FILE_URL, 
+                  destfile = fname_ext)
+  }
+  as.data.frame(readr::read_tsv(fname_ext, lazy=FALSE))
+}
+
+NAME_BASICS      <- get_imdb_file("name.basics")
+TITLE_BASICS     <- get_imdb_file("title.basics")
+TITLE_EPISODES   <- get_imdb_file("title.episode")
+TITLE_RATINGS    <- get_imdb_file("title.ratings")
+TITLE_CREW       <- get_imdb_file("title.crew")
+TITLE_PRINCIPALS <- get_imdb_file("title.principals")
+
+#Data Sub-Sampling
+NAME_BASICS <- NAME_BASICS |> 
+  filter(str_count(knownForTitles, ",") > 1)
+
+TITLE_RATINGS |>
+  ggplot(aes(x=numVotes)) + 
+  geom_histogram(bins=30) +
+  xlab("Number of IMDB Ratings") + 
+  ylab("Number of Titles") + 
+  ggtitle("Majority of IMDB Titles Have Less than 100 Ratings") + 
+  theme_bw() + 
+  scale_x_log10(label=scales::comma) + 
+  scale_y_continuous(label=scales::comma)
+TITLE_RATINGS |>
+  pull(numVotes) |>
+  quantile()
+TITLE_RATINGS <- TITLE_RATINGS |>
+  filter(numVotes >= 100)
+
+TITLE_BASICS <- TITLE_BASICS |>
+  semi_join(TITLE_RATINGS, 
+            join_by(tconst == tconst))
+
+TITLE_CREW <- TITLE_CREW |>
+  semi_join(TITLE_RATINGS, 
+            join_by(tconst == tconst))
+
+TITLE_EPISODES_1 <- TITLE_EPISODES |>
+  semi_join(TITLE_RATINGS, 
+            join_by(tconst == tconst))
+TITLE_EPISODES_2 <- TITLE_EPISODES |>
+  semi_join(TITLE_RATINGS, 
+            join_by(parentTconst == tconst))
+
+TITLE_EPISODES <- bind_rows(TITLE_EPISODES_1,
+                            TITLE_EPISODES_2) |>
+  distinct()
+
+TITLE_PRINCIPALS <- TITLE_PRINCIPALS |>
+  semi_join(TITLE_RATINGS, join_by(tconst == tconst))
+
+
+rm(TITLE_EPISODES_1)
+rm(TITLE_EPISODES_2)
+```
+
+## Task 1
+
+Our first task is to ensure that all our tables are clean. To do that we need to convert our tables into the proper variable type, alot of the variables are just chars so we need to fix that.
+
+```{r output = FALSE}
+#| code-fold: true
+NAME_BASICS <- NAME_BASICS |>
+  mutate(birthYear = as.numeric(birthYear),
+         deathYear = as.numeric(deathYear))
+
+#Task1
+TITLE_BASICS <- TITLE_BASICS |>
+  mutate(isAdult = as.logical(isAdult),
+         startYear = as.numeric(startYear),
+         endYear = as.numeric(endYear),
+         runtimeMinutes = as.numeric(runtimeMinutes))
+TITLE_CREW <- TITLE_CREW |>
+  mutate(writers = ifelse(str_equal(writers, "\\N"), NA, writers),
+         directors = ifelse(str_equal(writers, "\\N"), NA, directors))
+TITLE_EPISODES <- TITLE_EPISODES |> 
+  mutate(seasonNumber = as.numeric(seasonNumber),
+         episodeNumber = as.numeric(episodeNumber))
+TITLE_PRINCIPALS <- TITLE_PRINCIPALS |>
+  mutate(category = ifelse(str_equal(category, "\\N"), NA, category),
+         job = ifelse(str_equal(job, "\\N"), NA, job),
+         characters = ifelse(str_equal(characters, "\\N"), NA, characters))
+```
+
+## Task 2
+
+### How many movies are in our data set? How many TV series? How many TV episodes?
+
+```{r}
+#| code-fold: true
+TITLE_BASICS |> 
+  group_by(titleType) |> 
+  summarise(n = n()) |> 
+  DT::datatable()
+```
+
+As we see there are 132369 movies, 30043 TV series and 156967 TV episodes in our data set.
+
+### Who is the oldest living person in our data set?
+
+Because in the dataset NA values are treated for people who haven't died yer, or have an unknown death date we cant exactly find the answer to this using our dataset. Doing a little research shows that the oldest living actress is Brenda Miller born in 1918.
+
+```{r}
+#| code-fold: true
+NAME_BASICS |> 
+  filter(is.na(deathYear), birthYear > 1917) |> 
+  arrange(birthYear) |> 
+  head()
+```
+
+### There is one TV Episode in this data set with a perfect 10/10 rating and at least 200,000 IMDb ratings. What is it? What series does it belong to?
+
+```{r}
+#| code-fold: true
+#TITLE_RATINGS |> 
+#  filter(numVotes > 200000, averageRating == 10)
+TITLE_BASICS |> 
+  filter(tconst == "tt2301451")
+```
+
+To no surprise for any Breaking Bad fan, the 10/10 episode is Ozymandias from said tv show, Breaking Bad.
+
+### What four projects is the actor Mark Hamill most known for?
+
+```{r}
+#| code-fold: true
+#NAME_BASICS |> 
+#  filter(primaryName == "Mark Hamill")
+TITLE_BASICS |> 
+  filter(tconst %in% c("tt0076759","tt2527336","tt0080684","tt0086190"))
+```
+
+No Surprise here, Star Wars episodes IV,V,VI and VIII.
+
+### What TV series, with more than 12 episodes, has the highest *average* rating?
+
+```{r}
+#| code-fold: true
+TvSeries <- TITLE_EPISODES |> 
+  group_by(parentTconst) |> 
+  summarise(count = n()) |> 
+  filter(count > 12)
+TITLE_RATINGS |> 
+  filter(tconst %in% TvSeries$parentTconst) |> 
+  group_by(tconst) |> 
+  summarise(avgRating = mean(averageRating)) |> 
+  arrange(desc(avgRating)) |> 
+  head() |> 
+  DT::datatable()
+```
+
+Jogando Fodoacci
+
+### Is it true that episodes from later seasons of *Happy Days* have lower average ratings than the early seasons?
+
+```{r}
+#| code-fold: true
+TITLE_BASICS |> 
+  filter(primaryTitle == "Happy Days")
+#tt0070992
+Happy_Days <- TITLE_EPISODES |> 
+  filter(parentTconst == "tt0070992") |> 
+  arrange(seasonNumber, episodeNumber) |> 
+  mutate(totalEpisodeNum = row_number())
+Happy_Days <- inner_join(Happy_Days, TITLE_RATINGS, by = "tconst")
+Happy_Days |> 
+  ggplot(aes(totalEpisodeNum, averageRating)) +
+  geom_point() +
+  geom_smooth() +
+  theme_minimal()
+```
+
+It is mostly true that newer the middle of the series run Happy Days steadily dropped off, however by the end of the series it saw some recovery in quality.
+
+## Task 3
