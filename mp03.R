@@ -66,6 +66,9 @@ state_districts |>
   theme_minimal() +
   scale_fill_identity(guide = FALSE)
 #Texas - New York
+house$district <- str_pad(house$district, width=2, pad="0", side="left")
+house$state_fips <- str_pad(house$state_fips, width=2, pad="0", side="left")
+house$GEOID <- paste(house$state_fips, house$district, sep="")
 house_max <- house |> 
   group_by(candidate, GEOID, year) |> 
   slice(which.max(candidatevotes)) |> 
@@ -92,9 +95,51 @@ merged |>
   arrange(desc(diff))
 merged |> 
   group_by(year) |> 
-  summarise(diff = sum(diff)) |> 
+  summarise(diff = sum(diff)/1000) |> 
   ggplot(aes(year, diff)) +
   geom_line() +
   geom_hline(yintercept = 0, color = "red") +
+  labs(y = "Difference in Thousands") + 
   theme_minimal()
 #Task 4
+library(sf)
+read_shp_from_zip <- function(filename){
+  td <- tempdir(); 
+  zip_contents <- unzip(filename, 
+                        exdir = td)
+  fname_shp <- zip_contents[grepl("shp$", zip_contents)]
+  sf <- read_sf(fname_shp)
+  sf
+}
+#Task 5
+district106 <- read_shp_from_zip("districts106.zip")
+district106 <- district106 |> 
+  mutate(geometry = st_make_valid(geometry))
+district106 <- district106 |> 
+  mutate(geometry = st_transform(geometry, crs = 4326))
+states <- district106 |> 
+  group_by(STATENAME) |> 
+  summarize(geometry = st_union(geometry))
+states <- states |> 
+  mutate(geometry = st_make_valid(geometry))
+states <- states |> 
+  mutate(geometry = st_simplify(geometry, dTolerance = 500))
+ggplot(states, 
+       aes(geometry=geometry)) + 
+  geom_sf() + 
+  coord_sf(xlim = c(-175, 50), ylim = c(0, 75), datum = NA) +
+  theme_minimal()
+winners2000 <- president |> 
+  filter(year == 2000) |> 
+  group_by(state) |> 
+  slice(which.max(candidatevotes)) |> 
+  mutate(state = str_to_title(state)) |> 
+  rename(STATENAME = "state") 
+electoral <- merge(states, winners2000, by = "STATENAME")
+electoral |> 
+  mutate(Color = ifelse(party_simplified == "REPUBLICAN", "red", "blue")) |> 
+  ggplot(aes(geometry=geometry, fill = Color)) + 
+    geom_sf() + 
+    coord_sf(xlim = c(-175, 50), ylim = c(0, 75), datum = NA) +
+    theme_minimal() +
+    scale_fill_identity(guide = FALSE)

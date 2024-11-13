@@ -1,0 +1,35 @@
+---
+title: "Mini Project #3"
+---
+
+# Is the Electoral College Really Fair?
+
+In this project we aim to analyze the electoral system for President in the United States, this being the unorthodox Electoral College system. Where as most democratic countries elect leaders based off of some popular vote, in the United States it is based off a form of representative system. In each state, citizens vote for electors who pledge to vote for one candidate or another. This strange system induces results where the candidate who may win the popular vote is not guaranteed to win the Electoral College. In this analysis we aim to see how fair this system really is and whether another method of calculating votes would be better.
+
+## Task 1
+
+In our first task, we aim to create a function to automate the process of downloading our shape files for the US congressional districts. We can do this simply by iterating over a range of numbers that represent which editions of congress we'd like to look at.
+
+```{r}
+#| code-fold: true
+get_district_files <- function(x, y){
+  base_url <- "https://cdmaps.polisci.ucla.edu/shp/"
+  for(num in x:y) {
+    if (num < 10) {
+      ext <- paste0("districts00", num, ".zip")
+    }
+    else if (num < 100) {
+      ext <- paste0("districts0", num, ".zip")
+    }
+    else {
+      ext <- paste0("districts", num, ".zip")
+    }
+    if (!file.exists(ext)){
+      url <- paste0(base_url, ext)
+      download.file(url, 
+                    destfile = ext)
+    }
+  }
+}
+get_district_files(95, 114)
+```
