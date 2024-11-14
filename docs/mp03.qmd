@@ -96,3 +96,66 @@ state_districts |>
 ```
 
 As we can see here, Texas has gained the most where as New York has lost the most.
+
+Another interesting discovery which isn't so obvious, unless like me you are from New York, is the inclusion of fusion voting. This is only really prevalent in New York, where a candidate can appear on multiple ballot lines representing multiple parties. However all the votes for one candidate are coalesced into one count no matter the party.
+
+### Would any Elections be Different Without Fusion Voting?
+
+```{r}
+#| code-fold: true
+house$district <- str_pad(house$district, width=2, pad="0", side="left")
+house$state_fips <- str_pad(house$state_fips, width=2, pad="0", side="left")
+house$GEOID <- paste(house$state_fips, house$district, sep="")
+house_max <- house |> 
+  group_by(candidate, GEOID, year) |> 
+  slice(which.max(candidatevotes)) |> 
+  group_by(GEOID, year) |> 
+  slice(which.max(candidatevotes)) |> 
+  select(candidate, GEOID, year, candidatevotes)
+house_winner <- house |> 
+  group_by(candidate, GEOID, year) |> 
+  summarise(candidatevotes = sum(candidatevotes)) |> 
+  group_by(GEOID, year) |> 
+  slice(which.max(candidatevotes))
+anti_join(house_max, house_winner, by = c("candidate", "GEOID", "year")) |> 
+  DT::datatable(caption = htmltools::tags$caption(
+    style = 'caption-side: bottom; text-align: center;',
+    'Table 1: ', htmltools::em('Candidates who won on their major party line but lost due to Fusion Voting.')))
+```
+
+Here we can see a list of those such candidates who would have won if it was just Democrat vs Republican. However due to the implementation of fusion voting, this candidate lost. The **GEOID** is a combination of the state ID and district number. 36 is the ID for New York which makes up most of this list.
+
+Lastly it is interesting to take a look at the correlation or lack thereof between votes for a representative in a state and presidential votes in the same state. In other words, how many split-ballots are there?
+
+### Do Americans tend to Vote Down the Line?
+
+```{r}
+#| code-fold: true
+president <- read.csv("1976-2020-president.csv")
+house_party_votes <- house |> 
+  group_by(state, year, party) |> 
+  summarise(housevotes = sum(candidatevotes)) |> 
+  rename(party_detailed = party)
+merged <- merge(president, house_party_votes, by = c("state", "year", "party_detailed"))
+merged <- merged |> 
+  mutate(diff = candidatevotes - housevotes) 
+merged |> 
+  arrange(desc(diff)) |> 
+  DT::datatable()
+merged |> 
+  group_by(year) |> 
+  summarise(diff = sum(diff)/1000) |> 
+  ggplot(aes(year, diff)) +
+  geom_line() +
+  geom_hline(yintercept = 0, color = "red") +
+  labs(y = "Difference in Thousands") + 
+  theme_minimal()
+```
+
+Here the **diff** is:
+
+$Votes for President - Votes for HouseRepresentatives$
+
+So a higher positive number means people voted more for that parties presidential candidate then its house candidates and vice versa for negative numbers. Looking at the data we can see a general trend downward towards not voting for the same candidate president or voting third party. The dip in the 90s can be attributed to prominent third party candidate Ross Perot, where the most recent divide can be attributed to the introduction of Donald Trump which changed the American political landscape.
+
+Notable very successful presidents: Ronald Reagan and Obama over perform their congressional counterparts especially in states like Texas and Florida. On the other hand, to little surprise, 2016 Democratic presidential candidate Hillary Clinton tended to under perform among other poor performing candidates like Walter Mondale and Robert Dole.
