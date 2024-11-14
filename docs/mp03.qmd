@@ -13,6 +13,7 @@ In our first task, we aim to create a function to automate the process of downlo
 ```{r output = FALSE}
 #| code-fold: true
 library(tidyverse)
+library(ggrepel)
 options(dplyr.summarise.inform = FALSE)
 options()
 library(DT)
@@ -159,3 +160,198 @@ $Votes for President - Votes for HouseRepresentatives$
 So a higher positive number means people voted more for that parties presidential candidate then its house candidates and vice versa for negative numbers. Looking at the data we can see a general trend downward towards not voting for the same candidate president or voting third party. The dip in the 90s can be attributed to prominent third party candidate Ross Perot, where the most recent divide can be attributed to the introduction of Donald Trump which changed the American political landscape.
 
 Notable very successful presidents: Ronald Reagan and Obama over perform their congressional counterparts especially in states like Texas and Florida. On the other hand, to little surprise, 2016 Democratic presidential candidate Hillary Clinton tended to under perform among other poor performing candidates like Walter Mondale and Robert Dole.
+
+## Task 4
+
+Previously in Task 1 and 2 we downloaded alot of shapefiles in zips. Now we need to extract them and read them into R. This can be automated using a function saving alot of manual time.
+
+```{r output = FALSE}
+#| code-fold: true
+library(sf)
+read_shp_from_zip <- function(filename){
+  td <- tempdir(); 
+  zip_contents <- unzip(filename, 
+                        exdir = td)
+  fname_shp <- zip_contents[grepl("shp$", zip_contents)]
+  sf <- read_sf(fname_shp)
+  sf
+}
+```
+
+## Task 5
+
+Using the function we just created, we can now can access the shape files for the 2000 election. Using that we can create a chloropleth of the 2000 Presidential Election by electoral college results.
+
+```{r}
+#| code-fold: true
+district106 <- read_shp_from_zip("districts106.zip")
+district106 <- district106 |> 
+  mutate(geometry = st_make_valid(geometry))
+district106 <- district106 |> 
+  mutate(geometry = st_transform(geometry, crs = 4326))
+states <- district106 |> 
+  group_by(STATENAME) |> 
+  summarize(geometry = st_union(geometry))
+states <- states |> 
+  mutate(geometry = st_make_valid(geometry))
+states <- states |> 
+  mutate(geometry = st_simplify(geometry, dTolerance = 500))
+winners2000 <- president |> 
+  filter(year == 2000) |> 
+  group_by(state) |> 
+  slice(which.max(candidatevotes)) |> 
+  mutate(state = str_to_title(state)) |> 
+  rename(STATENAME = "state") 
+electoral <- merge(states, winners2000, by = "STATENAME")
+electoral |> 
+  mutate(Color = ifelse(party_simplified == "REPUBLICAN", "red", "blue")) |> 
+  ggplot(aes(geometry=geometry, fill = Color)) + 
+    geom_sf() + 
+    coord_sf(xlim = c(-175, -60), ylim = c(20, 75), datum = NA) +
+    theme_minimal() +
+    scale_fill_identity(guide = FALSE)
+```
+
+## Task 6 - Electoral College over Time
+
+Now lets see how the states have shifted election over election.
+
+```{r}
+#| code-fold: true
+winners <- president |> 
+  group_by(state, year) |> 
+  slice(which.max(candidatevotes)) |> 
+  mutate(state = str_to_title(state)) |> 
+  rename(STATENAME = "state") 
+electoral2 <- merge(states, winners, by = "STATENAME")
+electoral2 |> 
+  mutate(Color = ifelse(party_simplified == "REPUBLICAN", "red", "blue")) |> 
+  ggplot(aes(geometry=geometry, fill = Color)) + 
+  geom_sf() + 
+  coord_sf(xlim = c(-175, -60), ylim = c(20, 75), datum = NA) +
+  theme_minimal() +
+  scale_fill_identity(guide = FALSE) +
+  facet_wrap(~year)
+```
+
+## Task 7 - Which Electoral College Vote Allocation is the Fairest?
+
+The system in which most states decide to allocate their Electoral Votes, via winner takes all, is of some level of controversy here in America. Importantly, if a candidate receives 49% of votes of a large state like California, but loses out to a candidate with 51% of the votes, that candidate is given no Electoral Votes to show for it. Not only does this distort the Electoral College results versus the overall popular vote, it makes the prospect of a third party candidate almost impossible. If there ever was a way out of picking between Democrat and Republican, it would require an overhaul of how Electoral College votes are allocated. Scenarios where the candidate with the most popular votes loses the Electoral College, while rare, does not paint a good look on American democracy. With that in mind, lets analyze which system would be the fairest. If I had to choose I would distribute electoral college votes proportionally based on a national popular vote, nothing at the state level.
+
+### 1. State-Wide Winner Takes All (Status Quo)
+
+```{r}
+#| code-fold: true
+ECV <- house |> group_by(year, state) |> 
+  summarise(num_districts = max(district),
+            electoral_votes = ifelse(as.numeric(num_districts) == 0, 3, as.numeric(num_districts)+2)) |> 
+  mutate(state = str_to_title(state)) |> 
+  rename(STATENAME = "state")
+  
+winner_takeall <- merge(ECV, winners, by = c("STATENAME", "year"))
+winner_takeall <- winner_takeall |>  
+  group_by(year, party_simplified) |> 
+  summarise(electoral_votes = sum(electoral_votes))
+winner_takeall <- winner_takeall |> 
+  mutate(electoral_votes = ifelse(party_simplified == "DEMOCRAT", electoral_votes+3, electoral_votes))
+winner_takeall |> 
+  ggplot(aes(year, electoral_votes, fill = party_simplified)) +
+  geom_col(position = position_dodge(), alpha = .9) +
+  geom_label_repel(aes(label = electoral_votes), size = 3, show.legend = FALSE) +
+  theme_minimal() +
+  labs(title = "Winner Takes All", y = "Electoral Votes", fill = "Party") +
+  scale_fill_manual(values = c("blue", "red"), labels = c("Democrat", "Republican"))
+```
+
+### 2. District-Wide Winner Takes All + State-Wide 'At-Large' Votes
+
+```{r}
+#| code-fold: true
+house_winners <- house |> 
+  group_by(GEOID, year) |> 
+  slice(which.max(candidatevotes)) |> 
+  group_by(state, year, party) |> 
+  summarise(votes = n()) |> 
+  rename(party_simplified = "party")
+
+by_district <- merge(house_winners, president, by = c("state", "year", "party_simplified"))
+by_district <- by_district |> 
+  left_join(winners, by = c("state_po", "party_simplified", "year"), suffix = c("", "_winner")) |> 
+  mutate(votes = ifelse(is.na(candidatevotes_winner), votes, votes+2)) |> 
+  group_by(year, party_simplified) |> 
+  summarise(electoral_votes = sum(votes))
+by_district |> 
+  ggplot(aes(year, electoral_votes, fill = party_simplified)) +
+  geom_col(position = position_dodge(), alpha = .9) +
+  geom_label_repel(aes(label = electoral_votes), size = 3, show.legend = FALSE) +
+  theme_minimal() +
+  labs(title = "District Wide + State-Wide At Large Votes", y = "Electoral Votes", fill = "Party") +
+  scale_fill_manual(values = c("blue", "red"), labels = c("Democrat", "Republican"))
+```
+
+### 3. State-Wide Proportional
+
+```{r}
+#| code-fold: true
+ECV <- ECV |> 
+  rename(state = "STATENAME")
+president <- president |> 
+  mutate(state = str_to_title(state))
+prop <- merge(ECV, president, by = c("state", "year"))
+prop <- prop |> 
+  mutate(ratio = candidatevotes/totalvotes,
+         initialvotes = floor(ratio * electoral_votes),
+         remainder = ratio * electoral_votes - initialvotes
+         ) |> 
+  group_by(state, year) |> 
+  mutate(remaining = electoral_votes - sum(initialvotes)) |> 
+  arrange(desc(remainder)) |> 
+  mutate(additional = ifelse(row_number() <= remaining,1,0)) |> 
+  mutate(propvotes = initialvotes + additional) |> 
+  ungroup()
+prop <- prop |> 
+  group_by(party_simplified, year) |> 
+  summarise(electoral_votes = sum(propvotes))
+prop |> 
+  ggplot(aes(year, electoral_votes, fill = party_simplified)) +
+  geom_col(position = position_dodge(), alpha = .9) +
+  geom_label_repel(aes(label = electoral_votes), size = 3, show.legend = FALSE) +
+  theme_minimal() +
+  labs(title = "State-Wide Proportional", y = "Electoral Votes", fill = "Party") +
+  scale_fill_manual(values = c("blue", "yellow", "green", "red"), labels = c("Democrat", "Libertarian", "Other", "Republican"))
+```
+
+### 4. National Proportional
+
+```{r}
+#| code-fold: true
+presidentNational <- president |> 
+  group_by(year, candidate, party_simplified) |> 
+  summarise(votes = sum (candidatevotes)) |> 
+  mutate(total_electoral = 538)
+presidentNational <- presidentNational |> 
+  group_by(year) |> 
+  mutate(total_votes = sum(votes), 
+        ratio = votes/total_votes,
+        initialvotes = floor(ratio * total_electoral),
+        remainder = ratio * total_electoral - initialvotes
+        ) |> 
+  mutate(remaining = total_electoral - sum(initialvotes)) |> 
+  arrange(desc(remainder)) |> 
+  mutate(additional = ifelse(row_number() <= remaining,1,0)) |> 
+  mutate(propvotes = initialvotes + additional) |> 
+  ungroup()
+presidentNational |> 
+  group_by(party_simplified, year) |> 
+  summarise(propvotes = sum(propvotes)) |> 
+  ggplot(aes(year, propvotes, fill = party_simplified)) +
+  geom_col(position = position_dodge(), alpha = .9) +
+  geom_label_repel(aes(label = propvotes), size = 3, show.legend = FALSE) +
+  theme_minimal() +
+  labs(title = "National Proportional", y = "Electoral Votes", fill = "Party")+
+  scale_fill_manual(values = c("blue", "yellow", "green", "red"), labels = c("Democrat", "Libertarian", "Other", "Republican"))
+```
+
+## Results
+
+While at least the first three voting systems produce the same results, it is very evident that the current system, winner takes all produces the most lopsided results. While some elections are certainly one-sided like Reagan vs Mondale, the current system far over compensates the more statewide popular candidate. While the electoral college was a staggering **525 vs 13!** , the national popular vote was far from that. While it was 59% vs 40%, a clear blowout, it is still far from the \~95% to Reagan approximated by the electoral college. The only system of the four that produces different results is the National Proportional allocation. This overturns the highly controversial 2000 Gore vs Bush election and the 2016 Clinton vs Trump election. While both systems 3 and 4 allow room for a third party candidate, National Proportional is truly the only way that is close to representing the overall nationwide vote of the country. One could argue that the founders intended it for not to be directly proportional, to give more power to some states or to restrict so called "mob rule" or the will of the populace. However in practice, the winner takes all system does not perform contrary to the popular vote about 9 times out of town, so that argument is pretty moot. What it really does is ensure that no competition can exist outside of two major political parties which presents multiple problems in modern politics. And on the rare occasion, the system does fail and the less popular candidate becomes president. I think it is clear that the fairest system while staying inside of the electoral college system is the National Proportional System.

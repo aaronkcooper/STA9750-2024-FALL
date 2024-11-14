@@ -1,4 +1,5 @@
 library(tidyverse)
+library(ggrepel)
 #Data Ingestion
 #Task 1
 get_district_files <- function(x, y){
@@ -171,6 +172,13 @@ winner_takeall <- winner_takeall |>
   summarise(electoral_votes = sum(electoral_votes))
 winner_takeall <- winner_takeall |> 
   mutate(electoral_votes = ifelse(party_simplified == "DEMOCRAT", electoral_votes+3, electoral_votes))
+winner_takeall |> 
+  ggplot(aes(year, electoral_votes, fill = party_simplified)) +
+  geom_col(position = position_dodge(), alpha = .9) +
+  geom_label_repel(aes(label = electoral_votes), size = 3, show.legend = FALSE) +
+  theme_minimal() +
+  labs(title = "Winner Takes All", y = "Electoral Votes", fill = "Party") +
+  scale_fill_manual(values = c("blue", "red"), labels = c("Democrat", "Republican"))
 
 house_winners <- house |> 
   group_by(GEOID, year) |> 
