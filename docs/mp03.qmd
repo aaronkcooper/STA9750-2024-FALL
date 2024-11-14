@@ -10,8 +10,12 @@ In this project we aim to analyze the electoral system for President in the Unit
 
 In our first task, we aim to create a function to automate the process of downloading our shape files for the US congressional districts. We can do this simply by iterating over a range of numbers that represent which editions of congress we'd like to look at.
 
-```{r}
+```{r output = FALSE}
 #| code-fold: true
+library(tidyverse)
+options(dplyr.summarise.inform = FALSE)
+options()
+library(DT)
 get_district_files <- function(x, y){
   base_url <- "https://cdmaps.polisci.ucla.edu/shp/"
   for(num in x:y) {
@@ -33,3 +37,62 @@ get_district_files <- function(x, y){
 }
 get_district_files(95, 114)
 ```
+
+## Task 2
+
+With our previous function we only acquired the congress shape files from 1976 to 2012. Now we need to download and extract the files from 2014 to 2022. We have to get that from a different source, the US Census Bureau, and utilize a different function to automate the downloading process. This is simple and similar to the last function we created.
+
+```{r}
+#| code-fold: true
+get_tiger_files <- function(x, y){
+  base_url <- "https://www2.census.gov/geo/tiger/"
+  for(year in x:y) {
+    if (year %in% 2014:2015) {
+      ext <- paste0("TIGER", year, "/CD/", "tl_", year, "_us_cd114.zip")
+    }
+    else if (year %in% 2016:2017) {
+      ext <- paste0("TIGER", year, "/CD/", "tl_", year, "_us_cd115.zip")
+    }
+    else if (year %in% 2018:2022) {
+      ext <- paste0("TIGER", year, "/CD/", "tl_", year, "_us_cd116.zip")
+    }
+    if (!file.exists(paste0(year, "congressDistrict.zip"))){
+      url <- paste0(base_url, ext)
+      download.file(url, 
+                    destfile = paste0(year, "congressDistrict.zip"))
+    }
+  }
+}
+
+get_tiger_files(2014, 2022)
+```
+
+## Task 3
+
+Now that we have our data, lets dig a little deeper and analyze what we have so far. The first topic is interesting, as the census gets counted each iteration, the amount of representatives per state may change as populations shift between states.
+
+### Which states have gained and lost the most seats in the US House of Representatives between 1976 and 2022?
+
+```{r warning=FALSE}
+#| code-fold: true
+house <- read.csv("1976-2022-house.csv")
+state_districts <- house |> group_by(year, state) |> 
+  summarise(num_districts = max(district))
+state_districts <- state_districts |> 
+  mutate(num_districts = ifelse(num_districts == 0,1,num_districts))
+state_districts <- state_districts |> 
+  filter(year == 1976 | year == 2022) |> 
+  group_by(state) |> 
+  mutate(diff = diff(num_districts))
+library(forcats)
+state_districts |> 
+  filter(year == 2022) |> 
+  mutate(Color = ifelse(diff < 0, "red", "green")) |> 
+  ggplot(aes(diff, fct_reorder(state, diff), fill = Color)) +
+  geom_col() +
+  labs(x = "Change in Congress Seats from 1976-2022", y = "State") +
+  theme_minimal() +
+  scale_fill_identity(guide = FALSE)
+```
+
+As we can see here, Texas has gained the most where as New York has lost the most.
