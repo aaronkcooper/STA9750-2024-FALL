@@ -143,3 +143,82 @@ electoral |>
     coord_sf(xlim = c(-175, 50), ylim = c(0, 75), datum = NA) +
     theme_minimal() +
     scale_fill_identity(guide = FALSE)
+#Task 6
+winners <- president |> 
+  group_by(state, year) |> 
+  slice(which.max(candidatevotes)) |> 
+  mutate(state = str_to_title(state)) |> 
+  rename(STATENAME = "state") 
+electoral2 <- merge(states, winners, by = "STATENAME")
+electoral2 |> 
+  mutate(Color = ifelse(party_simplified == "REPUBLICAN", "red", "blue")) |> 
+  ggplot(aes(geometry=geometry, fill = Color)) + 
+  geom_sf() + 
+  coord_sf(xlim = c(-175, 50), ylim = c(0, 75), datum = NA) +
+  theme_minimal() +
+  scale_fill_identity(guide = FALSE) +
+  facet_wrap(~year)
+#Task 7
+ECV <- house |> group_by(year, state) |> 
+  summarise(num_districts = max(district),
+            electoral_votes = ifelse(as.numeric(num_districts) == 0, 3, as.numeric(num_districts)+2)) |> 
+  mutate(state = str_to_title(state)) |> 
+  rename(STATENAME = "state")
+  
+winner_takeall <- merge(ECV, winners, by = c("STATENAME", "year"))
+winner_takeall <- winner_takeall |>  
+  group_by(year, party_simplified) |> 
+  summarise(electoral_votes = sum(electoral_votes))
+winner_takeall <- winner_takeall |> 
+  mutate(electoral_votes = ifelse(party_simplified == "DEMOCRAT", electoral_votes+3, electoral_votes))
+
+house_winners <- house |> 
+  group_by(GEOID, year) |> 
+  slice(which.max(candidatevotes)) |> 
+  group_by(state, year, party) |> 
+  summarise(votes = n()) |> 
+  rename(party_simplified = "party")
+
+by_district <- merge(house_winners, president, by = c("state", "year", "party_simplified"))
+by_district <- by_district |> 
+  left_join(winners, by = c("state_po", "party_simplified", "year"), suffix = c("", "_winner")) |> 
+  mutate(votes = ifelse(is.na(candidatevotes_winner), votes, votes+2)) |> 
+  group_by(year, party_simplified) |> 
+  summarise(electoral_votes = sum(votes))
+
+ECV <- ECV |> 
+  rename(state = "STATENAME")
+president <- president |> 
+  mutate(state = str_to_title(state))
+prop <- merge(ECV, president, by = c("state", "year"))
+prop <- prop |> 
+  mutate(ratio = candidatevotes/totalvotes,
+         initialvotes = floor(ratio * electoral_votes),
+         remainder = ratio * electoral_votes - initialvotes
+         ) |> 
+  group_by(state, year) |> 
+  mutate(remaining = electoral_votes - sum(initialvotes)) |> 
+  arrange(desc(remainder)) |> 
+  mutate(additional = ifelse(row_number() <= remaining,1,0)) |> 
+  mutate(propvotes = initialvotes + additional) |> 
+  ungroup()
+prop <- prop |> 
+  group_by(party_simplified, year) |> 
+  summarise(electoral_votes = sum(propvotes))
+
+presidentNational <- president |> 
+  group_by(year, candidate, party_simplified) |> 
+  summarise(votes = sum (candidatevotes)) |> 
+  mutate(total_electoral = 538)
+presidentNational <- presidentNational |> 
+  group_by(year) |> 
+  mutate(total_votes = sum(votes), 
+        ratio = votes/total_votes,
+        initialvotes = floor(ratio * total_electoral),
+        remainder = ratio * total_electoral - initialvotes
+        ) |> 
+  mutate(remaining = total_electoral - sum(initialvotes)) |> 
+  arrange(desc(remainder)) |> 
+  mutate(additional = ifelse(row_number() <= remaining,1,0)) |> 
+  mutate(propvotes = initialvotes + additional) |> 
+  ungroup()
