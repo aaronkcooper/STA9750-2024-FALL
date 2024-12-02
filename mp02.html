@@ -1,0 +1,588 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html><head></head><body>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+
+
+
+
+
+
+
+<div class="page-columns page-rows-contents page-layout-article">
+
+<main class="content">
+
+<header class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">Mini Project #2</h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<section class="level1">
+<h1>What Makes a Successful Movie?</h1>
+<p>In this project we are taking a deep dive into the realm of IMDB to find what movies are highly rated and successful. Afterwards we are going to based on our analysis create a movie pitch for a brand new remake that will blow Hollywood execs out of the water.</p>
+<div class="cell">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span><a rel="noopener" href="#cb1-1"></a><span class="fu">library</span>(tidyverse)</span>
+<span><a rel="noopener" href="#cb1-2"></a><span class="fu">options</span>(<span class="at">dplyr.summarise.inform =</span> <span class="cn">FALSE</span>)</span>
+<span><a rel="noopener" href="#cb1-3"></a><span class="fu">library</span>(DT)</span>
+<span><a rel="noopener" href="#cb1-4"></a>get_imdb_file <span class="ot">&lt;-</span> <span class="cf">function</span>(fname){</span>
+<span><a rel="noopener" href="#cb1-5"></a>  BASE_URL <span class="ot">&lt;-</span> <span class="st">&quot;https://datasets.imdbws.com/&quot;</span></span>
+<span><a rel="noopener" href="#cb1-6"></a>  fname_ext <span class="ot">&lt;-</span> <span class="fu">paste0</span>(fname, <span class="st">&quot;.tsv.gz&quot;</span>)</span>
+<span><a rel="noopener" href="#cb1-7"></a>  <span class="cf">if</span>(<span class="sc">!</span><span class="fu">file.exists</span>(fname_ext)){</span>
+<span><a rel="noopener" href="#cb1-8"></a>    FILE_URL <span class="ot">&lt;-</span> <span class="fu">paste0</span>(BASE_URL, fname_ext)</span>
+<span><a rel="noopener" href="#cb1-9"></a>    <span class="fu">download.file</span>(FILE_URL, </span>
+<span><a rel="noopener" href="#cb1-10"></a>                  <span class="at">destfile =</span> fname_ext)</span>
+<span><a rel="noopener" href="#cb1-11"></a>  }</span>
+<span><a rel="noopener" href="#cb1-12"></a>  <span class="fu">as.data.frame</span>(readr<span class="sc">::</span><span class="fu">read_tsv</span>(fname_ext, <span class="at">lazy=</span><span class="cn">FALSE</span>))</span>
+<span><a rel="noopener" href="#cb1-13"></a>}</span>
+<span><a rel="noopener" href="#cb1-14"></a></span>
+<span><a rel="noopener" href="#cb1-15"></a>NAME_BASICS      <span class="ot">&lt;-</span> <span class="fu">get_imdb_file</span>(<span class="st">&quot;name.basics&quot;</span>)</span>
+<span><a rel="noopener" href="#cb1-16"></a>TITLE_BASICS     <span class="ot">&lt;-</span> <span class="fu">get_imdb_file</span>(<span class="st">&quot;title.basics&quot;</span>)</span>
+<span><a rel="noopener" href="#cb1-17"></a>TITLE_EPISODES   <span class="ot">&lt;-</span> <span class="fu">get_imdb_file</span>(<span class="st">&quot;title.episode&quot;</span>)</span>
+<span><a rel="noopener" href="#cb1-18"></a>TITLE_RATINGS    <span class="ot">&lt;-</span> <span class="fu">get_imdb_file</span>(<span class="st">&quot;title.ratings&quot;</span>)</span>
+<span><a rel="noopener" href="#cb1-19"></a>TITLE_CREW       <span class="ot">&lt;-</span> <span class="fu">get_imdb_file</span>(<span class="st">&quot;title.crew&quot;</span>)</span>
+<span><a rel="noopener" href="#cb1-20"></a>TITLE_PRINCIPALS <span class="ot">&lt;-</span> <span class="fu">get_imdb_file</span>(<span class="st">&quot;title.principals&quot;</span>)</span>
+<span><a rel="noopener" href="#cb1-21"></a></span>
+<span><a rel="noopener" href="#cb1-22"></a><span class="co">#Data Sub-Sampling</span></span>
+<span><a rel="noopener" href="#cb1-23"></a>NAME_BASICS <span class="ot">&lt;-</span> NAME_BASICS <span class="sc">|&gt;</span> </span>
+<span><a rel="noopener" href="#cb1-24"></a>  <span class="fu">filter</span>(<span class="fu">str_count</span>(knownForTitles, <span class="st">&quot;,&quot;</span>) <span class="sc">&gt;</span> <span class="dv">1</span>)</span>
+<span><a rel="noopener" href="#cb1-25"></a></span>
+<span><a rel="noopener" href="#cb1-26"></a>TITLE_RATINGS <span class="sc">|&gt;</span></span>
+<span><a rel="noopener" href="#cb1-27"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">x=</span>numVotes)) <span class="sc">+</span> </span>
+<span><a rel="noopener" href="#cb1-28"></a>  <span class="fu">geom_histogram</span>(<span class="at">bins=</span><span class="dv">30</span>) <span class="sc">+</span></span>
+<span><a rel="noopener" href="#cb1-29"></a>  <span class="fu">xlab</span>(<span class="st">&quot;Number of IMDB Ratings&quot;</span>) <span class="sc">+</span> </span>
+<span><a rel="noopener" href="#cb1-30"></a>  <span class="fu">ylab</span>(<span class="st">&quot;Number of Titles&quot;</span>) <span class="sc">+</span> </span>
+<span><a rel="noopener" href="#cb1-31"></a>  <span class="fu">ggtitle</span>(<span class="st">&quot;Majority of IMDB Titles Have Less than 100 Ratings&quot;</span>) <span class="sc">+</span> </span>
+<span><a rel="noopener" href="#cb1-32"></a>  <span class="fu">theme_bw</span>() <span class="sc">+</span> </span>
+<span><a rel="noopener" href="#cb1-33"></a>  <span class="fu">scale_x_log10</span>(<span class="at">label=</span>scales<span class="sc">::</span>comma) <span class="sc">+</span> </span>
+<span><a rel="noopener" href="#cb1-34"></a>  <span class="fu">scale_y_continuous</span>(<span class="at">label=</span>scales<span class="sc">::</span>comma)</span></code><i class="bi"></i></pre></div>
+</details>
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span><a rel="noopener" href="#cb2-1"></a>TITLE_RATINGS <span class="sc">|&gt;</span></span>
+<span><a rel="noopener" href="#cb2-2"></a>  <span class="fu">pull</span>(numVotes) <span class="sc">|&gt;</span></span>
+<span><a rel="noopener" href="#cb2-3"></a>  <span class="fu">quantile</span>()</span>
+<span><a rel="noopener" href="#cb2-4"></a>TITLE_RATINGS <span class="ot">&lt;-</span> TITLE_RATINGS <span class="sc">|&gt;</span></span>
+<span><a rel="noopener" href="#cb2-5"></a>  <span class="fu">filter</span>(numVotes <span class="sc">&gt;=</span> <span class="dv">100</span>)</span>
+<span><a rel="noopener" href="#cb2-6"></a></span>
+<span><a rel="noopener" href="#cb2-7"></a>TITLE_BASICS <span class="ot">&lt;-</span> TITLE_BASICS <span class="sc">|&gt;</span></span>
+<span><a rel="noopener" href="#cb2-8"></a>  <span class="fu">semi_join</span>(TITLE_RATINGS, </span>
+<span><a rel="noopener" href="#cb2-9"></a>            <span class="fu">join_by</span>(tconst <span class="sc">==</span> tconst))</span>
+<span><a rel="noopener" href="#cb2-10"></a></span>
+<span><a rel="noopener" href="#cb2-11"></a>TITLE_CREW <span class="ot">&lt;-</span> TITLE_CREW <span class="sc">|&gt;</span></span>
+<span><a rel="noopener" href="#cb2-12"></a>  <span class="fu">semi_join</span>(TITLE_RATINGS, </span>
+<span><a rel="noopener" href="#cb2-13"></a>            <span class="fu">join_by</span>(tconst <span class="sc">==</span> tconst))</span>
+<span><a rel="noopener" href="#cb2-14"></a></span>
+<span><a rel="noopener" href="#cb2-15"></a>TITLE_EPISODES_1 <span class="ot">&lt;-</span> TITLE_EPISODES <span class="sc">|&gt;</span></span>
+<span><a rel="noopener" href="#cb2-16"></a>  <span class="fu">semi_join</span>(TITLE_RATINGS, </span>
+<span><a rel="noopener" href="#cb2-17"></a>            <span class="fu">join_by</span>(tconst <span class="sc">==</span> tconst))</span>
+<span><a rel="noopener" href="#cb2-18"></a>TITLE_EPISODES_2 <span class="ot">&lt;-</span> TITLE_EPISODES <span class="sc">|&gt;</span></span>
+<span><a rel="noopener" href="#cb2-19"></a>  <span class="fu">semi_join</span>(TITLE_RATINGS, </span>
+<span><a rel="noopener" href="#cb2-20"></a>            <span class="fu">join_by</span>(parentTconst <span class="sc">==</span> tconst))</span>
+<span><a rel="noopener" href="#cb2-21"></a></span>
+<span><a rel="noopener" href="#cb2-22"></a>TITLE_EPISODES <span class="ot">&lt;-</span> <span class="fu">bind_rows</span>(TITLE_EPISODES_1,</span>
+<span><a rel="noopener" href="#cb2-23"></a>                            TITLE_EPISODES_2) <span class="sc">|&gt;</span></span>
+<span><a rel="noopener" href="#cb2-24"></a>  <span class="fu">distinct</span>()</span>
+<span><a rel="noopener" href="#cb2-25"></a></span>
+<span><a rel="noopener" href="#cb2-26"></a>TITLE_PRINCIPALS <span class="ot">&lt;-</span> TITLE_PRINCIPALS <span class="sc">|&gt;</span></span>
+<span><a rel="noopener" href="#cb2-27"></a>  <span class="fu">semi_join</span>(TITLE_RATINGS, <span class="fu">join_by</span>(tconst <span class="sc">==</span> tconst))</span>
+<span><a rel="noopener" href="#cb2-28"></a></span>
+<span><a rel="noopener" href="#cb2-29"></a></span>
+<span><a rel="noopener" href="#cb2-30"></a><span class="fu">rm</span>(TITLE_EPISODES_1)</span>
+<span><a rel="noopener" href="#cb2-31"></a><span class="fu">rm</span>(TITLE_EPISODES_2)</span></code><i class="bi"></i></pre></div>
+</details>
+</div>
+<section class="level2">
+<h2 class="anchored">Task 1</h2>
+<p>Our first task is to ensure that all our tables are clean. To do that we need to convert our tables into the proper variable type, alot of the variables are just chars so we need to fix that.</p>
+<div class="cell">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span><a rel="noopener" href="#cb3-1"></a>NAME_BASICS <span class="ot">&lt;-</span> NAME_BASICS <span class="sc">|&gt;</span></span>
+<span><a rel="noopener" href="#cb3-2"></a>  <span class="fu">mutate</span>(<span class="at">birthYear =</span> <span class="fu">as.numeric</span>(birthYear),</span>
+<span><a rel="noopener" href="#cb3-3"></a>         <span class="at">deathYear =</span> <span class="fu">as.numeric</span>(deathYear))</span>
+<span><a rel="noopener" href="#cb3-4"></a></span>
+<span><a rel="noopener" href="#cb3-5"></a><span class="co">#Task1</span></span>
+<span><a rel="noopener" href="#cb3-6"></a>TITLE_BASICS <span class="ot">&lt;-</span> TITLE_BASICS <span class="sc">|&gt;</span></span>
+<span><a rel="noopener" href="#cb3-7"></a>  <span class="fu">mutate</span>(<span class="at">isAdult =</span> <span class="fu">as.logical</span>(isAdult),</span>
+<span><a rel="noopener" href="#cb3-8"></a>         <span class="at">startYear =</span> <span class="fu">as.numeric</span>(startYear),</span>
+<span><a rel="noopener" href="#cb3-9"></a>         <span class="at">endYear =</span> <span class="fu">as.numeric</span>(endYear),</span>
+<span><a rel="noopener" href="#cb3-10"></a>         <span class="at">runtimeMinutes =</span> <span class="fu">as.numeric</span>(runtimeMinutes))</span>
+<span><a rel="noopener" href="#cb3-11"></a>TITLE_CREW <span class="ot">&lt;-</span> TITLE_CREW <span class="sc">|&gt;</span></span>
+<span><a rel="noopener" href="#cb3-12"></a>  <span class="fu">mutate</span>(<span class="at">writers =</span> <span class="fu">ifelse</span>(<span class="fu">str_equal</span>(writers, <span class="st">&quot;</span><span class="sc">\\</span><span class="st">N&quot;</span>), <span class="cn">NA</span>, writers),</span>
+<span><a rel="noopener" href="#cb3-13"></a>         <span class="at">directors =</span> <span class="fu">ifelse</span>(<span class="fu">str_equal</span>(writers, <span class="st">&quot;</span><span class="sc">\\</span><span class="st">N&quot;</span>), <span class="cn">NA</span>, directors))</span>
+<span><a rel="noopener" href="#cb3-14"></a>TITLE_EPISODES <span class="ot">&lt;-</span> TITLE_EPISODES <span class="sc">|&gt;</span> </span>
+<span><a rel="noopener" href="#cb3-15"></a>  <span class="fu">mutate</span>(<span class="at">seasonNumber =</span> <span class="fu">as.numeric</span>(seasonNumber),</span>
+<span><a rel="noopener" href="#cb3-16"></a>         <span class="at">episodeNumber =</span> <span class="fu">as.numeric</span>(episodeNumber))</span>
+<span><a rel="noopener" href="#cb3-17"></a>TITLE_PRINCIPALS <span class="ot">&lt;-</span> TITLE_PRINCIPALS <span class="sc">|&gt;</span></span>
+<span><a rel="noopener" href="#cb3-18"></a>  <span class="fu">mutate</span>(<span class="at">category =</span> <span class="fu">ifelse</span>(<span class="fu">str_equal</span>(category, <span class="st">&quot;</span><span class="sc">\\</span><span class="st">N&quot;</span>), <span class="cn">NA</span>, category),</span>
+<span><a rel="noopener" href="#cb3-19"></a>         <span class="at">job =</span> <span class="fu">ifelse</span>(<span class="fu">str_equal</span>(job, <span class="st">&quot;</span><span class="sc">\\</span><span class="st">N&quot;</span>), <span class="cn">NA</span>, job),</span>
+<span><a rel="noopener" href="#cb3-20"></a>         <span class="at">characters =</span> <span class="fu">ifelse</span>(<span class="fu">str_equal</span>(characters, <span class="st">&quot;</span><span class="sc">\\</span><span class="st">N&quot;</span>), <span class="cn">NA</span>, characters))</span></code><i class="bi"></i></pre></div>
+</details>
+</div>
+</section>
+<section class="level2">
+<h2 class="anchored">Task 2</h2>
+<section class="level3">
+<h3 class="anchored">How many movies are in our data set? How many TV series? How many TV episodes?</h3>
+<div class="cell">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span><a rel="noopener" href="#cb4-1"></a>TITLE_BASICS <span class="sc">|&gt;</span> </span>
+<span><a rel="noopener" href="#cb4-2"></a>  <span class="fu">group_by</span>(titleType) <span class="sc">|&gt;</span> </span>
+<span><a rel="noopener" href="#cb4-3"></a>  <span class="fu">summarise</span>(<span class="at">n =</span> <span class="fu">n</span>()) <span class="sc">|&gt;</span> </span>
+<span><a rel="noopener" href="#cb4-4"></a>  DT<span class="sc">::</span><span class="fu">datatable</span>()</span></code><i class="bi"></i></pre></div>
+</details>
+<div class="cell-output-display">
+<div class="datatables html-widget html-fill-item" style="width:100%;height:auto;"></div>
+
+</div>
+</div>
+<p>As we see there are 132369 movies, 30043 TV series and 156967 TV episodes in our data set.</p>
+</section>
+<section class="level3">
+<h3 class="anchored">Who is the oldest living person in our data set?</h3>
+<p>Because in the dataset NA values are treated for people who haven’t died yer, or have an unknown death date we cant exactly find the answer to this using our dataset. Doing a little research shows that the oldest living actress is Brenda Miller born in 1918.</p>
+<div class="cell">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span><a rel="noopener" href="#cb5-1"></a>NAME_BASICS <span class="sc">|&gt;</span> </span>
+<span><a rel="noopener" href="#cb5-2"></a>  <span class="fu">filter</span>(<span class="fu">is.na</span>(deathYear), birthYear <span class="sc">&gt;</span> <span class="dv">1917</span>) <span class="sc">|&gt;</span> </span>
+<span><a rel="noopener" href="#cb5-3"></a>  <span class="fu">arrange</span>(birthYear) <span class="sc">|&gt;</span> </span>
+<span><a rel="noopener" href="#cb5-4"></a>  <span class="fu">head</span>() <span class="sc">|&gt;</span> </span>
+<span><a rel="noopener" href="#cb5-5"></a>    DT<span class="sc">::</span><span class="fu">datatable</span>()</span></code><i class="bi"></i></pre></div>
+</details>
+</div>
+</section>
+<section class="level3">
+<h3 class="anchored">There is one TV Episode in this data set with a perfect 10/10 rating and at least 200,000 IMDb ratings. What is it? What series does it belong to?</h3>
+<div class="cell">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span><a rel="noopener" href="#cb6-1"></a><span class="co">#TITLE_RATINGS |&gt; </span></span>
+<span><a rel="noopener" href="#cb6-2"></a><span class="co">#  filter(numVotes &gt; 200000, averageRating == 10)</span></span>
+<span><a rel="noopener" href="#cb6-3"></a>TITLE_BASICS <span class="sc">|&gt;</span> </span>
+<span><a rel="noopener" href="#cb6-4"></a>  <span class="fu">filter</span>(tconst <span class="sc">==</span> <span class="st">&quot;tt2301451&quot;</span>) <span class="sc">|&gt;</span> </span>
+<span><a rel="noopener" href="#cb6-5"></a>    DT<span class="sc">::</span><span class="fu">datatable</span>()</span></code><i class="bi"></i></pre></div>
+</details>
+<div class="cell-output-display">
+<div class="datatables html-widget html-fill-item" style="width:100%;height:auto;"></div>
+
+</div>
+</div>
+<p>To no surprise for any Breaking Bad fan, the 10/10 episode is Ozymandias from said tv show, Breaking Bad.</p>
+</section>
+<section class="level3">
+<h3 class="anchored">What four projects is the actor Mark Hamill most known for?</h3>
+<div class="cell">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span><a rel="noopener" href="#cb7-1"></a><span class="co">#NAME_BASICS |&gt; </span></span>
+<span><a rel="noopener" href="#cb7-2"></a><span class="co">#  filter(primaryName == &quot;Mark Hamill&quot;)</span></span>
+<span><a rel="noopener" href="#cb7-3"></a>TITLE_BASICS <span class="sc">|&gt;</span> </span>
+<span><a rel="noopener" href="#cb7-4"></a>  <span class="fu">filter</span>(tconst <span class="sc">%in%</span> <span class="fu">c</span>(<span class="st">&quot;tt0076759&quot;</span>,<span class="st">&quot;tt2527336&quot;</span>,<span class="st">&quot;tt0080684&quot;</span>,<span class="st">&quot;tt0086190&quot;</span>)) <span class="sc">|&gt;</span> </span>
+<span><a rel="noopener" href="#cb7-5"></a>    DT<span class="sc">::</span><span class="fu">datatable</span>()</span></code><i class="bi"></i></pre></div>
+</details>
+<div class="cell-output-display">
+<div class="datatables html-widget html-fill-item" style="width:100%;height:auto;"></div>
+
+</div>
+</div>
+<p>No Surprise here, Star Wars episodes IV,V,VI and VIII.</p>
+</section>
+<section class="level3">
+<h3 class="anchored">What TV series, with more than 12 episodes, has the highest <em>average</em> rating?</h3>
+<div class="cell">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span><a rel="noopener" href="#cb8-1"></a>TITLE_RATINGS <span class="sc">|&gt;</span> </span>
+<span><a rel="noopener" href="#cb8-2"></a>  <span class="fu">filter</span>(tconst <span class="sc">%in%</span> TvSeries<span class="sc">$</span>parentTconst) <span class="sc">|&gt;</span> </span>
+<span><a rel="noopener" href="#cb8-3"></a>  <span class="fu">group_by</span>(tconst) <span class="sc">|&gt;</span> </span>
+<span><a rel="noopener" href="#cb8-4"></a>  <span class="fu">summarise</span>(<span class="at">avgRating =</span> <span class="fu">mean</span>(averageRating)) <span class="sc">|&gt;</span> </span>
+<span><a rel="noopener" href="#cb8-5"></a>  <span class="fu">arrange</span>(<span class="fu">desc</span>(avgRating)) <span class="sc">|&gt;</span> </span>
+<span><a rel="noopener" href="#cb8-6"></a>  <span class="fu">head</span>() <span class="sc">|&gt;</span> </span>
+<span><a rel="noopener" href="#cb8-7"></a>  DT<span class="sc">::</span><span class="fu">datatable</span>()</span></code><i class="bi"></i></pre></div>
+</details>
+<div class="cell-output-display">
+<div class="datatables html-widget html-fill-item" style="width:100%;height:auto;"></div>
+
+</div>
+</div>
+</section>
+<section class="level3">
+<h3 class="anchored">Is it true that episodes from later seasons of <em>Happy Days</em> have lower average ratings than the early seasons?</h3>
+<div class="cell">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span><a rel="noopener" href="#cb9-1"></a>Happy_Days <span class="ot">&lt;-</span> TITLE_EPISODES <span class="sc">|&gt;</span> </span>
+<span><a rel="noopener" href="#cb9-2"></a>  <span class="fu">filter</span>(parentTconst <span class="sc">==</span> <span class="st">&quot;tt0070992&quot;</span>) <span class="sc">|&gt;</span> </span>
+<span><a rel="noopener" href="#cb9-3"></a>  <span class="fu">arrange</span>(seasonNumber, episodeNumber) <span class="sc">|&gt;</span> </span>
+<span><a rel="noopener" href="#cb9-4"></a>  <span class="fu">mutate</span>(<span class="at">totalEpisodeNum =</span> <span class="fu">row_number</span>())</span>
+<span><a rel="noopener" href="#cb9-5"></a>Happy_Days <span class="ot">&lt;-</span> <span class="fu">inner_join</span>(Happy_Days, TITLE_RATINGS, <span class="at">by =</span> <span class="st">&quot;tconst&quot;</span>)</span>
+<span><a rel="noopener" href="#cb9-6"></a>Happy_Days <span class="sc">|&gt;</span> </span>
+<span><a rel="noopener" href="#cb9-7"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(totalEpisodeNum, averageRating)) <span class="sc">+</span></span>
+<span><a rel="noopener" href="#cb9-8"></a>  <span class="fu">geom_point</span>() <span class="sc">+</span></span>
+<span><a rel="noopener" href="#cb9-9"></a>  <span class="fu">geom_smooth</span>() <span class="sc">+</span></span>
+<span><a rel="noopener" href="#cb9-10"></a>  <span class="fu">theme_minimal</span>()</span></code><i class="bi"></i></pre></div>
+</details>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="mp02_files/figure-html/unnamed-chunk-10-1.png" class="img-fluid figure-img" width="672"/></p>
+</figure>
+</div>
+</div>
+</div>
+<p>It is mostly true that newer the middle of the series run Happy Days steadily dropped off, however by the end of the series it saw some recovery in quality.</p>
+</section>
+</section>
+<section class="level2">
+<h2 class="anchored">Task 3</h2>
+<p>To quantify the success we need to find some way of measuring success based off of average rating and the number of votes. If we simply multiplied the two, it may unfairly inflate bad movies who simply have a high amount of engagement in voting. However, generally movies with more votes should have a higher weighting, because when comparing two movies with the same average rating, the one with higher votes it is a lot more impressive to hold that rating when the sample size is much larger.</p>
+<p>To solve this issue, we will create a metric using log transformation to give some weight to number of votes but not have it dominate the metric.</p>
+<p><span class="math display">\[
+Success = averageRating * (1 + log_{10}(numVotes))
+\]</span></p>
+<section class="level3">
+<h3 class="anchored">Metric Validation</h3>
+<p>To make sure our metric is accurate, lets check the top movies and see whether they were box offices successus or not.</p>
+<div class="cell">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span><a rel="noopener" href="#cb10-1"></a>TITLE_RATINGS <span class="ot">&lt;-</span> TITLE_RATINGS <span class="sc">|&gt;</span> </span>
+<span><a rel="noopener" href="#cb10-2"></a>  <span class="fu">mutate</span>(<span class="at">success =</span> averageRating <span class="sc">*</span> <span class="dv">1</span><span class="sc">+</span><span class="fu">log10</span>(numVotes))</span>
+<span><a rel="noopener" href="#cb10-3"></a>TITLE_BASICS <span class="sc">|&gt;</span> </span>
+<span><a rel="noopener" href="#cb10-4"></a>  <span class="fu">filter</span>(tconst <span class="sc">%in%</span> <span class="fu">c</span>(<span class="st">&quot;tt0903747&quot;</span>,<span class="st">&quot;tt0111161&quot;</span>,<span class="st">&quot;tt0944947&quot;</span>,<span class="st">&quot;tt0068646&quot;</span>, <span class="st">&quot;tt0468569&quot;</span>, <span class="st">&quot;tt2301451&quot;</span>)) <span class="sc">|&gt;</span> </span>
+<span><a rel="noopener" href="#cb10-5"></a>    DT<span class="sc">::</span><span class="fu">datatable</span>()</span></code><i class="bi"></i></pre></div>
+</details>
+<div class="cell-output-display">
+<div class="datatables html-widget html-fill-item" style="width:100%;height:auto;"></div>
+
+</div>
+</div>
+<p>Indeed all of these movie and tv shows are heavily acclaimed and widely known across the country and the world. One could argue that these are the top respective Movies and Tv Shows of all time.</p>
+<p>Next let’s check bad movies with a significant amount of votes.</p>
+<div class="cell">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span><a rel="noopener" href="#cb11-1"></a>TITLE_RATINGS <span class="sc">|&gt;</span> </span>
+<span><a rel="noopener" href="#cb11-2"></a>  <span class="fu">filter</span>(numVotes <span class="sc">&gt;</span> <span class="dv">50000</span>, success <span class="sc">&lt;</span> <span class="dv">8</span>) <span class="sc">|&gt;</span> </span>
+<span><a rel="noopener" href="#cb11-3"></a>  <span class="fu">arrange</span>(success) <span class="sc">|&gt;</span> </span>
+<span><a rel="noopener" href="#cb11-4"></a>  DT<span class="sc">::</span><span class="fu">datatable</span>()</span></code><i class="bi"></i></pre></div>
+</details>
+<div class="cell-output-display">
+<div class="datatables html-widget html-fill-item" style="width:100%;height:auto;"></div>
+
+</div>
+</div>
+<p>Indeed, these score quite poorly. Keep in mind that this metric because it is log transformed, the lowest movies in success are around 3, and peaks around 15.8.</p>
+<p>Now lets take a look at my favorite director, Christopher Nolan, and see how his projects fare using our metric.</p>
+<div class="cell">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span><a rel="noopener" href="#cb12-1"></a><span class="co">#NAME_BASICS |&gt; </span></span>
+<span><a rel="noopener" href="#cb12-2"></a><span class="co">#  filter(primaryName == &quot;Christopher Nolan&quot;)</span></span>
+<span><a rel="noopener" href="#cb12-3"></a>TITLE_RATINGS <span class="sc">|&gt;</span> </span>
+<span><a rel="noopener" href="#cb12-4"></a>  <span class="fu">filter</span>(tconst <span class="sc">%in%</span> <span class="fu">c</span>(<span class="st">&quot;tt6723592&quot;</span>,<span class="st">&quot;tt0816692&quot;</span>,<span class="st">&quot;tt1375666&quot;</span>,<span class="st">&quot;tt0482571&quot;</span>)) <span class="sc">|&gt;</span> </span>
+<span><a rel="noopener" href="#cb12-5"></a>  DT<span class="sc">::</span><span class="fu">datatable</span>()</span></code><i class="bi"></i></pre></div>
+</details>
+<div class="cell-output-display">
+<div class="datatables html-widget html-fill-item" style="width:100%;height:auto;"></div>
+
+</div>
+</div>
+<p>Indeed his famous movies are some of the all time greats, and score significantly well on our success metric. Finally, I thought it would be fun to take a look at The Room. This movie is famously one of the best “worst movies” and has garnered a cult following. Because of that, it should have poor average rating but alot of votes which will help test the robustness of our metric.</p>
+<div class="cell">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span><a rel="noopener" href="#cb13-1"></a><span class="co">#TITLE_BASICS |&gt; </span></span>
+<span><a rel="noopener" href="#cb13-2"></a><span class="co">#  filter(primaryTitle == &quot;The Room&quot;)</span></span>
+<span><a rel="noopener" href="#cb13-3"></a>TITLE_RATINGS <span class="sc">|&gt;</span> </span>
+<span><a rel="noopener" href="#cb13-4"></a>  <span class="fu">filter</span>(tconst <span class="sc">==</span> <span class="st">&quot;tt0368226&quot;</span>)  <span class="sc">|&gt;</span> </span>
+<span><a rel="noopener" href="#cb13-5"></a>  DT<span class="sc">::</span><span class="fu">datatable</span>()</span></code><i class="bi"></i></pre></div>
+</details>
+<div class="cell-output-display">
+<div class="datatables html-widget html-fill-item" style="width:100%;height:auto;"></div>
+
+</div>
+</div>
+<p>And it indeed does not score well despite it being a popular film to review. Though it has some success to take credit for considering its cult following, which is exactly what our metric aims to capture.</p>
+<p>Given that our metric is effective, let’s determine what score could be considered a success on our metric.</p>
+<div class="cell">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span><a rel="noopener" href="#cb14-1"></a>TITLE_RATINGS <span class="sc">|&gt;</span> </span>
+<span><a rel="noopener" href="#cb14-2"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(success)) <span class="sc">+</span> </span>
+<span><a rel="noopener" href="#cb14-3"></a>  <span class="fu">stat_function</span>(</span>
+<span><a rel="noopener" href="#cb14-4"></a>    <span class="at">fun =</span> dnorm,</span>
+<span><a rel="noopener" href="#cb14-5"></a>    <span class="at">args =</span> <span class="fu">with</span>(TITLE_RATINGS, <span class="fu">c</span>(<span class="at">mean =</span> <span class="fu">mean</span>(success), <span class="at">sd =</span> <span class="fu">sd</span>(success)))</span>
+<span><a rel="noopener" href="#cb14-6"></a>  ) <span class="sc">+</span> <span class="fu">theme_minimal</span>()</span></code><i class="bi"></i></pre></div>
+</details>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="mp02_files/figure-html/unnamed-chunk-15-1.png" class="img-fluid figure-img" width="672"/></p>
+</figure>
+</div>
+</div>
+</div>
+<p>Plotting a normal distribution of our metric, we can see the mean lies just below 10. So I think classifying a movie as a success as 10 and up would qualify as <strong>solid</strong> or better.</p>
+</section>
+</section>
+<section class="level2">
+<h2 class="anchored">Task 4</h2>
+<p>Now that we have a measure for success, lets analyze trends over genre and decade.</p>
+<section class="level3">
+<h3 class="anchored">Most Successes for Decade</h3>
+<div class="cell">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span><a rel="noopener" href="#cb15-1"></a>titles <span class="ot">&lt;-</span> <span class="fu">inner_join</span>(TITLE_RATINGS, <span class="fu">separate_longer_delim</span>(TITLE_BASICS, genres, <span class="st">&quot;,&quot;</span>), <span class="at">by =</span> <span class="st">&quot;tconst&quot;</span>)</span>
+<span><a rel="noopener" href="#cb15-2"></a>titles <span class="ot">&lt;-</span> <span class="fu">filter</span>(titles, titleType <span class="sc">==</span> <span class="st">&quot;movie&quot;</span>)</span>
+<span><a rel="noopener" href="#cb15-3"></a>titles <span class="sc">|&gt;</span> </span>
+<span><a rel="noopener" href="#cb15-4"></a>  <span class="fu">mutate</span>(<span class="at">decade =</span> <span class="fu">signif</span>(startYear, <span class="dv">3</span>)) <span class="sc">|&gt;</span> </span>
+<span><a rel="noopener" href="#cb15-5"></a>  <span class="fu">filter</span>(success <span class="sc">&gt;=</span> <span class="dv">10</span>) <span class="sc">|&gt;</span> </span>
+<span><a rel="noopener" href="#cb15-6"></a>  <span class="fu">group_by</span>(decade, genres) <span class="sc">|&gt;</span> </span>
+<span><a rel="noopener" href="#cb15-7"></a>  <span class="fu">summarise</span>(<span class="at">successes =</span> <span class="fu">n</span>()) <span class="sc">|&gt;</span> </span>
+<span><a rel="noopener" href="#cb15-8"></a>  <span class="fu">arrange</span>(<span class="fu">desc</span>(successes)) <span class="sc">|&gt;</span> </span>
+<span><a rel="noopener" href="#cb15-9"></a>  <span class="fu">distinct</span>(decade, <span class="at">.keep_all =</span> <span class="cn">TRUE</span>) <span class="sc">|&gt;</span> </span>
+<span><a rel="noopener" href="#cb15-10"></a>  DT<span class="sc">::</span><span class="fu">datatable</span>()</span></code><i class="bi"></i></pre></div>
+</details>
+<div class="cell-output-display">
+<div class="datatables html-widget html-fill-item" style="width:100%;height:auto;"></div>
+
+</div>
+</div>
+<p>The most successes for every decade it seems is Drama. Note that in order to condense the genres, we had to delimit the genres that were separated by commas into multiple entries. So a single movie can have multiple genre entries, like a Romantic Comedy for example. This might have an influence on why Dramas are so prevalent as an umbrella genre.</p>
+</section>
+<section class="level3">
+<h3 class="anchored">Genres over Time</h3>
+<div class="cell">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span><a rel="noopener" href="#cb16-1"></a>titles <span class="sc">|&gt;</span> </span>
+<span><a rel="noopener" href="#cb16-2"></a>  <span class="fu">mutate</span>(<span class="at">decade =</span> <span class="fu">signif</span>(startYear, <span class="dv">3</span>)) <span class="sc">|&gt;</span> </span>
+<span><a rel="noopener" href="#cb16-3"></a>  <span class="fu">filter</span>(success <span class="sc">&gt;=</span> <span class="dv">10</span>) <span class="sc">|&gt;</span> </span>
+<span><a rel="noopener" href="#cb16-4"></a>  <span class="fu">group_by</span>(decade, genres) <span class="sc">|&gt;</span> </span>
+<span><a rel="noopener" href="#cb16-5"></a>  <span class="fu">summarise</span>(<span class="at">successes =</span> <span class="fu">n</span>()) <span class="sc">|&gt;</span> </span>
+<span><a rel="noopener" href="#cb16-6"></a>  <span class="fu">arrange</span>(genres) <span class="sc">|&gt;</span> </span>
+<span><a rel="noopener" href="#cb16-7"></a>  <span class="fu">filter</span>(genres <span class="sc">%in%</span> <span class="fu">c</span>(<span class="st">&quot;Action&quot;</span>, <span class="st">&quot;Drama&quot;</span>, <span class="st">&quot;Romance&quot;</span>, <span class="st">&quot;Documentary&quot;</span>, <span class="st">&quot;Comedy&quot;</span>, <span class="st">&quot;Western&quot;</span>, <span class="st">&quot;Biography&quot;</span>, <span class="st">&quot;History&quot;</span>)) <span class="sc">|&gt;</span> </span>
+<span><a rel="noopener" href="#cb16-8"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(decade, successes)) <span class="sc">+</span></span>
+<span><a rel="noopener" href="#cb16-9"></a>  <span class="fu">geom_line</span>(<span class="fu">aes</span>(<span class="at">color =</span> genres))</span></code><i class="bi"></i></pre></div>
+</details>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="mp02_files/figure-html/unnamed-chunk-17-1.png" class="img-fluid figure-img" width="672"/></p>
+</figure>
+</div>
+</div>
+</div>
+<p>When looking at how genres perform over time, I think it makes sense to focus on some of the most prominent genres as putting everything on a graph will be overly cluttered and hard to read. Given that, we can see that Drams for sure have consistently put out the most successes. While Romance movies used to be a lot more prominent in the 1900s but have considerably fallen out of favor after the turn of the century.</p>
+<p>When you take a look at Documentaries, that genre has become a lot more popular as of recently. They really weren’t popular but saw a quick rise at the turn of the century and quickly ascended to the 3rd most popular genre.</p>
+</section>
+<section class="level3">
+<h3 class="anchored">Success after 2010</h3>
+<div class="cell">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span><a rel="noopener" href="#cb17-1"></a>titles <span class="ot">&lt;-</span> titles <span class="sc">|&gt;</span> </span>
+<span><a rel="noopener" href="#cb17-2"></a>  <span class="fu">mutate</span>(<span class="at">decade =</span> <span class="fu">signif</span>(startYear, <span class="dv">3</span>)) <span class="sc">|&gt;</span> </span>
+<span><a rel="noopener" href="#cb17-3"></a>  <span class="fu">mutate</span>(<span class="at">threshold =</span> <span class="fu">ifelse</span>(success <span class="sc">&gt;=</span> <span class="dv">10</span>, <span class="dv">1</span>, <span class="dv">0</span>))</span>
+<span><a rel="noopener" href="#cb17-4"></a>titles <span class="sc">|&gt;</span> </span>
+<span><a rel="noopener" href="#cb17-5"></a>  <span class="fu">filter</span>(startYear <span class="sc">&gt;=</span> <span class="dv">2010</span>) <span class="sc">|&gt;</span> </span>
+<span><a rel="noopener" href="#cb17-6"></a>  <span class="fu">group_by</span>(genres) <span class="sc">|&gt;</span> </span>
+<span><a rel="noopener" href="#cb17-7"></a>  <span class="fu">summarise</span>(<span class="at">successes =</span> <span class="fu">sum</span>(threshold),</span>
+<span><a rel="noopener" href="#cb17-8"></a>            <span class="at">ratio =</span> <span class="fu">sum</span>(threshold) <span class="sc">/</span> <span class="fu">n</span>()) <span class="sc">|&gt;</span> </span>
+<span><a rel="noopener" href="#cb17-9"></a>  <span class="fu">arrange</span>(<span class="fu">desc</span>(successes)) <span class="sc">|&gt;</span> </span>
+<span><a rel="noopener" href="#cb17-10"></a>  <span class="fu">ggplot</span>() <span class="sc">+</span></span>
+<span><a rel="noopener" href="#cb17-11"></a>  <span class="fu">geom_col</span>(<span class="fu">aes</span>(successes, genres)) <span class="sc">+</span> </span>
+<span><a rel="noopener" href="#cb17-12"></a>  <span class="fu">theme_minimal</span>()</span></code><i class="bi"></i></pre></div>
+</details>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="mp02_files/figure-html/unnamed-chunk-18-1.png" class="img-fluid figure-img" width="672"/></p>
+</figure>
+</div>
+</div>
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span><a rel="noopener" href="#cb18-1"></a>titles <span class="sc">|&gt;</span> </span>
+<span><a rel="noopener" href="#cb18-2"></a>  <span class="fu">filter</span>(startYear <span class="sc">&gt;=</span> <span class="dv">2010</span>) <span class="sc">|&gt;</span> </span>
+<span><a rel="noopener" href="#cb18-3"></a>  <span class="fu">group_by</span>(genres) <span class="sc">|&gt;</span> </span>
+<span><a rel="noopener" href="#cb18-4"></a>  <span class="fu">summarise</span>(<span class="at">successes =</span> <span class="fu">sum</span>(threshold),</span>
+<span><a rel="noopener" href="#cb18-5"></a>            <span class="at">ratio =</span> <span class="fu">sum</span>(threshold) <span class="sc">/</span> <span class="fu">n</span>()) <span class="sc">|&gt;</span> </span>
+<span><a rel="noopener" href="#cb18-6"></a>  <span class="fu">arrange</span>(<span class="fu">desc</span>(successes)) <span class="sc">|&gt;</span> </span>
+<span><a rel="noopener" href="#cb18-7"></a>  <span class="fu">ggplot</span>() <span class="sc">+</span></span>
+<span><a rel="noopener" href="#cb18-8"></a>  <span class="fu">geom_col</span>(<span class="fu">aes</span>(ratio, genres)) <span class="sc">+</span></span>
+<span><a rel="noopener" href="#cb18-9"></a>  <span class="fu">theme_minimal</span>()</span></code><i class="bi"></i></pre></div>
+</details>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="mp02_files/figure-html/unnamed-chunk-18-2.png" class="img-fluid figure-img" width="672"/></p>
+</figure>
+</div>
+</div>
+</div>
+<p>Disregarding the NA column, its no surprise given our previous graphic that Dramas contain the largest amount of successes by sheer volume. However, if we take a look at what percentage in each genre is a success we get a better understanding of what actually performs best. Talk-Show has the best ratio but the small sample size makes it tough to look at seriously. We can see that next to it, Biographies perform exceptionally well, while also having a moderate but respectable success count.</p>
+<p>Given Biographies success and less competition, it seems like a great genre to design a movie concept around.</p>
+</section>
+</section>
+<section class="level2">
+<h2 class="anchored">Task 5 - The Dream Cast</h2>
+<section class="level3">
+<h3 class="anchored">A Famous Duo</h3>
+<p>For our movie I suggest we go with the prolific director-actor combo of Christopher Nolan and Christian Bale. Not only have the individually contributed to some of the best movies of all time, they also have collaborated on multiple together, producing some of the top movies of all time. To illustrate this point lets see how their movies where they both appear as director and actor fair against the average movie.</p>
+<div class="cell">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span><a rel="noopener" href="#cb19-1"></a>success_summary <span class="ot">&lt;-</span> <span class="fu">summary</span>(titles<span class="sc">$</span>success)</span>
+<span><a rel="noopener" href="#cb19-2"></a>avg_success <span class="ot">&lt;-</span> <span class="fu">data_frame</span>(<span class="at">primaryTitle =</span> <span class="st">&quot;Average Movie&quot;</span>, <span class="at">success =</span> success_summary[<span class="dv">3</span>])</span>
+<span><a rel="noopener" href="#cb19-3"></a>titles <span class="sc">|&gt;</span> </span>
+<span><a rel="noopener" href="#cb19-4"></a>  <span class="fu">filter</span>(tconst <span class="sc">%in%</span> <span class="fu">c</span>(<span class="st">&quot;tt0482571&quot;</span>, <span class="st">&quot;tt0372784&quot;</span>, <span class="st">&quot;tt0468569&quot;</span>, <span class="st">&quot;tt1345836&quot;</span>)) <span class="sc">|&gt;</span> </span>
+<span><a rel="noopener" href="#cb19-5"></a>  <span class="fu">distinct</span>(tconst, <span class="at">.keep_all =</span> <span class="cn">TRUE</span>) <span class="sc">|&gt;</span> </span>
+<span><a rel="noopener" href="#cb19-6"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(primaryTitle, success)) <span class="sc">+</span></span>
+<span><a rel="noopener" href="#cb19-7"></a>  <span class="fu">geom_col</span>(<span class="at">fill =</span> <span class="st">&quot;red4&quot;</span>) <span class="sc">+</span></span>
+<span><a rel="noopener" href="#cb19-8"></a>  <span class="fu">geom_col</span>(<span class="at">data =</span> avg_success, <span class="at">fill =</span> <span class="st">&quot;blue&quot;</span>) <span class="sc">+</span></span>
+<span><a rel="noopener" href="#cb19-9"></a>  <span class="fu">scale_y_continuous</span>(<span class="at">limits =</span> <span class="fu">c</span>(<span class="dv">0</span>,<span class="dv">16</span>)) <span class="sc">+</span></span>
+<span><a rel="noopener" href="#cb19-10"></a>  <span class="fu">scale_color_discrete</span>(<span class="at">guide =</span> <span class="st">&quot;none&quot;</span>) <span class="sc">+</span></span>
+<span><a rel="noopener" href="#cb19-11"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">&quot;Partnership of Christian Bale and Christopher Nolan&quot;</span>) <span class="sc">+</span></span>
+<span><a rel="noopener" href="#cb19-12"></a>  <span class="fu">theme_minimal</span>()</span></code><i class="bi"></i></pre></div>
+</details>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="mp02_files/figure-html/unnamed-chunk-19-1.png" class="img-fluid figure-img" width="672"/></p>
+</figure>
+</div>
+</div>
+</div>
+<p>As we can see, their movies are in an elite club as some of the best movies of all time.</p>
+</section>
+<section class="level3">
+<h3 class="anchored">A Killer Biography</h3>
+<p>We established before that the genre we would like to target is a Biography, a hot genre that is performing exceptionally well these days while not being over-saturated. Especially coming off the great success of Oppenheimer, Nolan would be a great pick for this movie. He proved at least with Oppenheimer how effective he can be at historical storytelling. Christian Bale is a prolific actor who has tackled many roles and certainly would be up for any challenge.</p>
+<p>Lets see which Biographies have performed the best.</p>
+<div class="cell">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span><a rel="noopener" href="#cb20-1"></a>titles <span class="sc">|&gt;</span> </span>
+<span><a rel="noopener" href="#cb20-2"></a>  <span class="fu">filter</span>(genres <span class="sc">==</span> <span class="st">&quot;Biography&quot;</span>) <span class="sc">|&gt;</span> </span>
+<span><a rel="noopener" href="#cb20-3"></a>  <span class="fu">arrange</span>(<span class="fu">desc</span>(success)) <span class="sc">|&gt;</span> </span>
+<span><a rel="noopener" href="#cb20-4"></a>  <span class="fu">head</span>(<span class="at">n =</span> <span class="dv">50</span>) <span class="sc">|&gt;</span> </span>
+<span><a rel="noopener" href="#cb20-5"></a>  DT<span class="sc">::</span><span class="fu">datatable</span>()</span></code><i class="bi"></i></pre></div>
+</details>
+<div class="cell-output-display">
+<div class="datatables html-widget html-fill-item" style="width:100%;height:auto;"></div>
+
+</div>
+</div>
+<p>Two movie that stick out to me are Goodfellas and The Wolf of Wall Street. Both excellent movies. they also feature the same lead, Leonardo Dicaprio, who I think would also be a great fit for this project. We already see how successful his Biography movies are, so he would be a great addition to our team. We can see his success through his best known movies.</p>
+<div class="cell">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span><a rel="noopener" href="#cb21-1"></a>titles <span class="sc">|&gt;</span> </span>
+<span><a rel="noopener" href="#cb21-2"></a>  <span class="fu">filter</span>(tconst <span class="sc">%in%</span> <span class="fu">c</span>(<span class="st">&quot;tt1375666&quot;</span>,<span class="st">&quot;tt0407887&quot;</span>,<span class="st">&quot;tt0120338&quot;</span>,<span class="st">&quot;tt0993846&quot;</span>)) <span class="sc">|&gt;</span> </span>
+<span><a rel="noopener" href="#cb21-3"></a>  <span class="fu">distinct</span>(tconst, <span class="at">.keep_all =</span> <span class="cn">TRUE</span>) <span class="sc">|&gt;</span> </span>
+<span><a rel="noopener" href="#cb21-4"></a>  DT<span class="sc">::</span><span class="fu">datatable</span>(</span>
+<span><a rel="noopener" href="#cb21-5"></a>    <span class="at">caption =</span> <span class="st">&quot;Leonardo DiCaprio&#39;s Feature Films&quot;</span></span>
+<span><a rel="noopener" href="#cb21-6"></a>  )</span></code><i class="bi"></i></pre></div>
+</details>
+<div class="cell-output-display">
+<div class="datatables html-widget html-fill-item" style="width:100%;height:auto;"></div>
+
+</div>
+</div>
+<p>As we can see, he is an extremely accomplished actor with previous success leading BioPics and is a great fit for this project.</p>
+</section>
+</section>
+<section class="level2">
+<h2 class="anchored">Task 6 - Time for a Remake?</h2>
+<p>When looking at the top Biographies, a great candidate for a remake stood out to me: Spartacus. This classic from 1960 has been begging to be remade and now is the time! Unfortunately the great Stanley Kubrick who directed is no longer alive, neither is the original writers or actors so we will have to go in with an all new cast. That’s all right as we have selected an all-star crew to lead our new vision of Spartacus for a modern audience.</p>
+</section>
+<section class="level2">
+<h2 class="anchored">Task 7 - The Ultimate Movie Pitch</h2>
+<p>Spartacus, an all time Kubrick classic from 1960, is ready to be remade. A winner of the Best Picture award in 1960, this BioPic about a slave rebellion would certainly see considerable success today. An underdog story about slaves rebelling against their masters would sell great with audiences especially today with the heightened sense of justice within modern American society.</p>
+<p>BioPics have been the most successful movie genre by a significant margin for the last decade, while remaining underutilized in the market with a lot of untapped potential. Coming off the heels off the extremely successful BioPic, Oppenheimer, we can think of no better director then Christopher Nolan to lead this project. Nolan, one of the most successful directors of our generation has enjoyed considerable box office success. Alongside him, Christian Bale who has partnered with Nolan multiple times in the past will be one of the featured actors of this film. Bale together with Nolan have been in arguably some of the greatest movies of all time and it is time for them to reunite again once more. Rounding out the crew will be Leonardo DiCaprio, who has already featured in all time great BioPics like the Wolf of Wall Street and Goodfellas. With this all-star team and proven track record, this movie is due to break the box office.</p>
+<p>Here is a quick trailer snippet to get you excited for this future blockbuster film:</p>
+<p>From director Christopher Nolan, the visionary mind between Oppenheimer; and From actor Christian Bale, beloved star of the Batman Trilogy; and From actor Leonardo DiCaprio, Hollywood icon of the Biography genre , Comes the timeless tail Spartacus A story of heorism, defiance, and tragedy. Coming soon to a theater near you.</p>
+</section>
+</section>
+
+</main>
+
+
+</div> 
+
+
+
+
+<script type="module" src="https://s.brightspace.com/lib/bsi/2024.10.207/unbundled/mathjax.js"></script><script type="text/javascript">document.addEventListener('DOMContentLoaded', function() {
+						if (document.querySelector('math') || /\$\$|\\\(|\\\[|\\begin{|\\ref{|\\eqref{/.test(document.body.innerHTML)) {
+							document.querySelectorAll('mspace[linebreak="newline"]').forEach(elm => {
+								elm.setAttribute('style', 'display: block; height: 0.5rem;');
+							});
+
+							window.D2L.MathJax.loadMathJax({
+								outputScale: 1.5,
+								renderLatex: true,
+								enableMML3Support: false
+							});
+						}
+					});</script><script type="module" src="https://s.brightspace.com/lib/bsi/2024.10.207/unbundled/prism.js"></script><script type="text/javascript">document.addEventListener('DOMContentLoaded', function() {
+					document.querySelectorAll('.d2l-code').forEach(code => {
+						window.D2L.Prism.formatCodeElement(code);
+					});
+				});</script><script type="module" src="https://s.brightspace.com/lib/bsi/2024.10.207/unbundled/embeds.js"></script><script type="text/javascript">document.addEventListener('DOMContentLoaded', function() {
+					window.D2L.EmbedRenderer.renderEmbeds(document.body);
+				});</script></body></html>
