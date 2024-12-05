@@ -3,3 +3,406 @@ title: "Mini Project #4"
 ---
 
 # How Should a CUNY Employee Best Secure Their Retirement?
+
+In this last project to wrap the semester, we are taking a dive into the wide world of financial data. Specifically, in this project we are going to analyze the two different retirement plans offered to CUNY employees and see how they differ. Is one better then the other? How do we even define better in this sense? Whats less risky, what will yield you more value over time on average? These questions we will aim to answer.
+
+## Tasks 1-3: Acquiring the Data
+
+First to start off, we need to acquire our financial data that will serve as a basis on our calculations going forward. To do this we need to collect financial data covering these metrics:
+
+-   Wage growth
+
+-   Inflation
+
+-   US Equity Market total returns
+
+-   International Equity Market total returns
+
+-   Bond market total returns
+
+-   Short-term debt returns
+
+To do this we are going to take advantage of the **AlphaVantage** and **FRED** APIs to acquire the time-series data. After its downloaded I will go over why I picked the specific funds that I did.
+
+```{r output = FALSE}
+#| code-fold: true
+library(httr2)
+library(tidyverse)
+library(scales)
+library(DT)
+#Task 1-2
+api <- read_lines("api.txt")
+#Task 3
+alphavantage_req <- request("https://www.alphavantage.co/query") |>
+  req_url_query(`function` = "TIME_SERIES_MONTHLY_ADJUSTED",
+                symbol = "VTI",
+                apikey = api[1],
+                datatype = "csv")
+resp <- req_perform(alphavantage_req)
+csv <- resp |> resp_body_string()
+VTI <- read.csv(text = csv)
+fred_req <- request("https://api.stlouisfed.org/fred/series/observations") |>
+  req_url_query(series_id = "FRBATLWGT12MMUMHGO",
+                api_key = api[2],
+                file_type = "json")
+resp2 <- req_perform(fred_req)
+json <- resp2 |> resp_body_json()
+wages <- do.call(rbind, lapply(json$observations, as.data.frame))
+wages <- select(wages, c("date", "value"))
+alphavantage_req2 <- request("https://www.alphavantage.co/query") |>
+  req_url_query(`function` = "TIME_SERIES_MONTHLY_ADJUSTED",
+                symbol = "VBTLX",
+                apikey = api[1],
+                datatype = "csv")
+resp3 <- req_perform(alphavantage_req2)
+csv2 <- resp3 |> resp_body_string()
+VBTLX <- read.csv(text = csv2)
+alphavantage_req3 <- request("https://www.alphavantage.co/query") |>
+  req_url_query(`function` = "TIME_SERIES_MONTHLY_ADJUSTED",
+                symbol = "VEU",
+                apikey = api[1],
+                datatype = "csv")
+resp4 <- req_perform(alphavantage_req3)
+csv3 <- resp4 |> resp_body_string()
+VEU <- read.csv(text = csv3)
+alphavantage_req4 <- request("https://www.alphavantage.co/query") |>
+  req_url_query(`function` = "TIME_SERIES_MONTHLY_ADJUSTED",
+                symbol = "VBIRX",
+                apikey = api[1],
+                datatype = "csv")
+resp5 <- req_perform(alphavantage_req4)
+csv4 <- resp5 |> resp_body_string()
+VBIRX <- read.csv(text = csv4)
+fred_req2 <- request("https://api.stlouisfed.org/fred/series/observations") |>
+  req_url_query(series_id = "CPIAUCSL",
+                api_key = api[2],
+                file_type = "json")
+resp6 <- req_perform(fred_req2)
+json2 <- resp6 |> resp_body_json()
+inflation <- do.call(rbind, lapply(json2$observations, as.data.frame))
+inflation <- select(inflation, c("date", "value"))
+
+wages <- wages |> 
+  mutate(date = as.Date(date)) |> 
+  mutate(date = ceiling_date(date, unit = "month") - days(1))
+
+inflation <- inflation |> 
+  mutate(date = as.Date(date)) |> 
+  mutate(date = ceiling_date(date, unit = "month") - days(1))
+
+VTI <- VTI |> 
+  rename(date = timestamp) |> 
+  select(date, close) |> 
+  mutate(date = as.Date(date)) |> 
+  mutate(date = ceiling_date(date, unit = "month") - days(1))
+VEU <- VEU |> 
+  rename(date = timestamp) |> 
+  select(date, close) |> 
+  mutate(date = as.Date(date)) |> 
+  mutate(date = ceiling_date(date, unit = "month") - days(1))
+VBIRX <- VBIRX |> 
+  rename(date = timestamp) |> 
+  select(date, close) |> 
+  mutate(date = as.Date(date)) |> 
+  mutate(date = ceiling_date(date, unit = "month") - days(1))
+VBTLX <- VBTLX |> 
+  rename(date = timestamp) |> 
+  select(date, close) |> 
+  mutate(date = as.Date(date)) |> 
+  mutate(date = ceiling_date(date, unit = "month") - days(1))
+
+fred_data <- inner_join(wages, inflation, by = "date")
+fred_data <- fred_data |> 
+  rename(wages_pct_change = value.x,
+         CPI = value.y)
+
+indices <- inner_join(VTI, VEU, by = "date")
+indices <- indices |> 
+  rename(VTI = close.x,
+         VEU = close.y)
+indices <- inner_join(indices, VBIRX, by = "date")
+indices <- indices |> 
+  rename(VBIRX = close)
+indices <- inner_join(indices, VBTLX, by = "date")
+indices <- indices |> 
+  rename(VBTLX = close)
+
+indices_longer <- indices |> 
+  pivot_longer(cols = c(VTI, VEU, VBIRX, VBTLX), names_to = "ETF", values_to = "Return")
+```
+
+### US Equity Market Total Returns
+
+For this metric, we are analyzing the **Vanguard Total Stock Market Index Fund ETF (VTI)**. Vanguard is one of the leading providers of ETFs and Mutual Funds in the market. For the sake of consistency in this analysis, all ETFs will be Vanguard provided funds. This ETF captures the total stock market as opposed to just top companies like an S&P 500 index would capture.
+
+### International Equity Market Total Returns
+
+For this metric, we are analyzing the **Vanguard FTSE All World ex US ETF (VEU)**, which as the name suggests aims to capture the whole world stock market excluding the US. We already have the US captured in **VTI** so there is no need to overlap the US in a global metric.
+
+### Bond Market Total Returns
+
+For bonds we are using **Vanguard Total Bond Market Index Fund Admiral Shares (VBTLX)**, this aims to capture a broad array of US bonds, short intermediate and long term bonds. Bonds are usually tied to interest rates and are generally a less risky option then stocks. However as the interest rate fluctuates it could cause a downturn in price, and with less risk also comes less reward.
+
+### Short-Term Debt Returns
+
+Simiarily, short-term debt returns is a type of bond investment that only focuses on short term investments. This is reserved for only the oldest of employees as it usually makes more sense to invest in longer term securities to increase the potential returns. Therefore this is the lowest risk and lowest return type investment. **For this we are using Vanguard Short-Term Bond Index Fund Admiral Shares (VBIRX**).
+
+### Inflation and Wage Growth
+
+For these metrics we will take advantage of the FRED API to acquire data from the Federal Reserve Economic Data repository. For Inflation we will use a metric called the **Consumer Price Index (CPI)** which generally measures the cost of an identical basket of goods year over year. Wage growth we will look at the running average of salary increase percentage over the last 12 months.
+
+## Task 4 - Analysis
+
+Now that we have the data, there are a few things that might be interesting to take a look at. First its probably worth comparing how US returns compare to the rest of the world. Maybe it can give us some insight on American economic domination or lack thereof.
+
+```{r}
+#| code-fold: true
+indices_longer |> 
+  filter(ETF == "VEU" | ETF == "VTI") |> 
+  ggplot(aes(date, Return, color = ETF)) +
+    geom_line(linewidth = 1.2, alpha = .8) +
+    labs(
+      x = "Date",
+      y = "Cumulative Returns",
+      title = "US Returns vs International Returns"
+    ) +
+    scale_y_continuous(labels = dollar_format()) +
+    theme_minimal() +
+    theme(legend.position = "bottom")
+```
+
+While both economies were greatly affected by the 2008 financial crisis, it is actually quite wild to see how much the American market has pulled ahead over global competition.
+
+Another thing worth looking at is the risk vs reward paradigm of bonds vs short term debt returns. Does this hold true?
+
+```{r}
+#| code-fold: true
+indices_longer |> 
+  filter(ETF == "VBIRX" | ETF == "VBTLX") |> 
+  ggplot(aes(date, Return, color = ETF)) +
+  geom_line(linewidth = 1.2, alpha = .8) +
+  labs(
+    x = "Date",
+    y = "Cumulative Returns",
+    title = "Short Debt vs Bond Market Returns"
+  ) +
+  scale_y_continuous(labels = dollar_format()) +
+  theme_minimal() +
+  theme(legend.position = "bottom")
+```
+
+And our suspicions are confirmed. As we assumed **VBTLX** has higher highs and lower lows, where as **VBIRX** is less risky and doesn't fluctuate as much.
+
+Lastly it might be interesting to see if wage growth is tied at all to inflation like it might be advertised. Generally companies try to account for inflation in annual salary adjustments, but how true is this in practice?
+
+```{r}
+#| code-fold: true
+ fred_data <- fred_data |> 
+  mutate(wages_pct_change = as.numeric(wages_pct_change),
+         CPI = as.numeric(CPI),
+         CPI_pct_change = (CPI - lag(CPI))/lag(CPI)*100)
+fred_data <- fred_data |> 
+  mutate(CPI_pct_change = ifelse(is.na(CPI_pct_change), 0, CPI_pct_change),
+         wages_monthly_change = ((1 + wages_pct_change / 100)^(1/12) - 1) * 100)
+
+salary <- fred_data |> 
+  mutate(new_salary = 161 * cumprod(1 + wages_monthly_change / 100))
+cor(salary$new_salary, salary$CPI)
+```
+
+To test this, I simulated to see if wages grew at the same rate as the CPI and overall it is extremely correlated. While wage growth may take some time to see the effects in inflation due to weighted averaging it does generally match. As we see the correlation is near 1. I will also display the table if you want to take a look.
+
+```{r}
+#| code-fold: true
+salary |> 
+  DT::datatable()
+```
+
+```{r echo = FALSE}
+indices <- arrange(indices, date)
+
+VTI_returns <- c(0, diff(indices$VTI) / head(indices$VTI, -1))
+mean(VTI_returns)*1200
+VEU_returns <- c(0, diff(indices$VEU) / head(indices$VEU, -1))
+mean(VEU_returns)*1200
+VBTLX_returns <- c(0, diff(indices$VBTLX) / head(indices$VBTLX, -1))
+```
+
+### Task 5 - Historical Battle
+
+Now that we have looked into our data, its time to start the heavweight battle between our retirement options, those being **Teachers Retirement System (TRS)** and **Optional Retirement Plan (OPR).**
+
+TRS is calculated as follows:
+
+It is based off of the average of the the last 3 years of salary issued to the employee, or **Final Average Salary (FAS)**.
+
+$$
+ if(N<20, .00167*FAS*N)
+$$
+
+$$
+if(N = 20, .00175*FAS*N)
+$$
+
+$$
+if(N>20, (.035+.02*N)*FAS
+$$
+
+Its then adjusted for inflation.
+
+$$
+Inflation = max(.01, min(.03,mean(CPI*.5)))
+$$
+
+OPR is more convoluted and its asset allocation adjusts based on the employees age.
+
+-   Age 25 to Age 49:
+
+    -   54% US Equities
+
+    -   36% International Equities
+
+    -   10% Bonds
+
+-   Age 50 to Age 59:
+
+    -   47% US Equities
+
+    -   32% International Equities
+
+    -   21% Bonds
+
+-   Age 60 to Age 74:
+
+    -   34% US Equities
+
+    -   23% International Equities
+
+    -   43% Bonds
+
+-   Age 75 or older:
+
+    -   19% US Equities
+
+    -   13% International Equities
+
+    -   62% Bonds
+
+    -   6% Short-Term Debt
+
+Furthermore both the employee and employer contribute to the fund,
+
+-   \$45,000 or less: 3%
+
+-   \$45,001 to \$55,000: 3.5%
+
+-   \$55,001 to \$75,000: 4.5%
+
+-   \$75,001 to \$100,000: 5.75%
+
+-   \$100,001 or more: 6%
+
+The employer contribution is fixed at:
+
+-   8% for the first seven years of employment at CUNY.
+
+-   10% for all years thereafter.
+
+Using our historical data (2007-present), lets compare how these options would fare once an employee retires in this year of 2024 assuming they started in 2007.
+
+For this we are assuming a starting salary of 50,000 and age between 25-49.
+
+```{r}
+#| code-fold: true
+orp <- function(start, wages, returns, asset_allocation = c(US_equities = 0.54, Intl_equities = 0.36, Bonds = 0.1, Short_term_debt = 0)) {
+  returns$VTI_return <- c(0, diff(returns$VTI) / head(returns$VTI, -1))
+  returns$VEU_return <- c(0, diff(returns$VEU) / head(returns$VEU, -1))
+  returns$VBTLX_return <- c(0, diff(returns$VBTLX) / head(returns$VBTLX, -1))
+  returns$VBIRX_return <- c(0, diff(returns$VBIRX) / head(returns$VBIRX, -1))
+  months <- length(wages$date)
+  salary <- numeric(months)
+  salary[1] <- start
+  for (i in 2:months) {
+    salary[i] <- salary[i - 1] * (1 + (as.numeric(wages$value[i - 1]))/1200)
+  }
+  monthly <- salary / 12
+  employee_rate <- sapply(salary, function(s) {
+    if (s <= 45000) return(0.03)
+    if (s <= 55000) return(0.035)
+    if (s <= 75000) return(0.045)
+    if (s <= 100000) return(0.0575)
+    return(0.06)
+  })
+  employer_rate <- c(rep(.08, 7 * 12), rep(.1, (months - 7 * 12)))
+  employee_contribution <- monthly * employee_rate
+  employer_contribution <- monthly * employer_rate
+  total_contribution <- employee_contribution + employer_contribution
+  orp_balance <- numeric(months)
+  for (i in 1:months) {
+    growth_rate <- sum(
+      returns$VTI_return[i] * asset_allocation["US_equities"],
+      returns$VEU_return[i] * asset_allocation["Intl_equities"],
+      returns$VBTLX_return[i] * asset_allocation["Bonds"],
+      returns$VBIRX_return[i] * asset_allocation["Short_term_debt"]
+    )
+    if (i == 1) {
+      orp_balance[i] <- total_contribution[i]
+    } else {
+      orp_balance[i] <- (orp_balance[i - 1]*(1+ growth_rate) + total_contribution[i]) 
+    }
+  }
+  return(orp_balance[months])
+}
+orp_returns <- orp(50000, filter(wages, date >= "2007-04-30"), indices)
+
+trs <- function(start, wages, inflation, retirement_years) {
+  months <- length(wages$date)
+  service_years <- months %/% 12
+  salary <- numeric(months)
+  salary[1] <- start
+  for (i in 2:months) {
+    salary[i] <- salary[i - 1] * (1 + (as.numeric(wages$value[i - 1]))/1200)
+  }
+  cpi <- as.numeric(inflation$value)
+  final_3_years <- salary[(months - 35):months]  
+  FAS <- mean(final_3_years)
+  
+  if (service_years < 20) {
+    benefit_rate <- 0.0167 * service_years
+  } else if (service_years == 20) {
+    benefit_rate <- 0.0175 * service_years
+  } else {
+    benefit_rate <- 0.35 + 0.02 * service_years
+  }
+  annual_benefit <- FAS * benefit_rate 
+  monthly_benefit <- annual_benefit / 12
+  
+  inflation_rate <- numeric(months)
+  for (i in 13:months) {
+    inflation_rate[i] <- (cpi[i] - cpi[i - 12]) / cpi[i - 12]
+  }
+  
+  trs_balance <- 0
+  inflation_adjusted_benefit <- monthly_benefit
+  for (year in 1:retirement_years) {
+    if (retirement_years == 0) {
+      return(monthly_benefit*12)
+    }
+    if (year == 1) {
+      inflation_rate <- max(0.01, min(0.03, mean(cpi[1:12]) / 200))
+    } else {
+      inflation_rate <- max(0.01, min(0.03, mean(cpi[((year - 1) * 12 + 1):(year * 12)]) / 200))
+    }
+    
+    # Adjust benefit for inflation
+    inflation_adjusted_benefit <- inflation_adjusted_benefit * (1 + inflation_rate)
+    
+    # Add 12 months of benefit payments
+    trs_balance <- trs_balance + inflation_adjusted_benefit * 12
+  }
+  
+  return(trs_balance)
+}
+trs(50000, filter(wages, date >= "2007-04-30"), inflation, 0)/12
+orp_returns
+```

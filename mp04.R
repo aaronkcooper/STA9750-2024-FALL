@@ -133,7 +133,6 @@ fred_data <- fred_data |>
 fred_data <- fred_data |> 
   mutate(CPI_pct_change = ifelse(is.na(CPI_pct_change), 0, CPI_pct_change),
          wages_monthly_change = ((1 + wages_pct_change / 100)^(1/12) - 1) * 100)
-cor(fred_data$wages_monthly_change, fred_data$CPI_pct_change)
 
 salary <- fred_data |> 
   mutate(new_salary = 161 * cumprod(1 + wages_monthly_change / 100))
@@ -148,7 +147,6 @@ mean(VEU_returns)*1200
 VBTLX_returns <- c(0, diff(indices$VBTLX) / head(indices$VBTLX, -1))
 mean(VBTLX_returns)*1200
 #Task 5
-starting_salary <- 50000
 
 orp <- function(start, wages, returns, asset_allocation = c(US_equities = 0.54, Intl_equities = 0.36, Bonds = 0.1, Short_term_debt = 0)) {
   returns$VTI_return <- c(0, diff(returns$VTI) / head(returns$VTI, -1))
@@ -225,9 +223,9 @@ trs <- function(start, wages, inflation, retirement_years) {
       return(monthly_benefit*12)
     }
     if (year == 1) {
-      inflation_rate <- max(0.01, min(0.03, mean(cpi[1:12]) / 100))
+      inflation_rate <- max(0.01, min(0.03, mean(cpi[1:12]) / 200))
     } else {
-      inflation_rate <- max(0.01, min(0.03, mean(cpi[((year - 1) * 12 + 1):(year * 12)]) / 100))
+      inflation_rate <- max(0.01, min(0.03, mean(cpi[((year - 1) * 12 + 1):(year * 12)]) / 200))
     }
     
     # Adjust benefit for inflation
@@ -484,7 +482,7 @@ bootstrap_trs <- function(wages, inflation, n_bootstrap) {
   ))
 }
 
-# Example Usage:
+
 bootstrap_trs_results <- bootstrap_trs(filter(wages, date >= "2007-04-30"), inflation, 200)
 print(bootstrap_trs_results)
 
