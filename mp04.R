@@ -243,7 +243,7 @@ trs(50000, filter(wages, date >= "2007-04-30"), inflation, 0)/12
 # retirement_years - 15
 trs15 <- trs(50000, filter(wages, date >= "2007-04-30"), inflation, 15)
 
-trs15/12
+trs15/(12*15)
 simulate_orp_withdrawals <- function(
     initial_balance, 
     annual_withdrawal, 
