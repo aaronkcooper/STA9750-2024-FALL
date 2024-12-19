@@ -1,0 +1,51 @@
+---
+title: "The Olympic Advantage"
+---
+
+## The Economics of the Olympics
+
+When asking the question, "What leads to success at the Olympics?", economic factors may not immediately jump to mind. However, not only is this a big indicative factor to individual countries success, but plays a huge role overall in the game of winning the Olympics. A higher economic output leads to greater potential investment in sports and training facilities for athletes. **Potential** being the key word here, as of course its up to each country how they allocate their resources. In this analysis we are going to take a deep dive into this question of how big of an impact Economic factors play in the grand spectacle that is the Olympics.
+
+```{r output = FALSE}
+#| code-fold: true
+library(tidyverse)
+library(janitor)
+library(FSA)
+library(car)
+library(lme4)
+library(MuMIn)
+library(MASS)
+economy <- read_csv("Global Economy Indicators.csv")
+economy <- economy |> 
+  clean_names()
+economy <- economy |> 
+  mutate(per_capita_gdp = gross_domestic_product_gdp/population)
+medals <- read_csv("olympics/Olympic_Medal_Tally_History.csv")
+#Filter for relevant economic data
+medals <- filter(medals, year >= 1970)
+#Filter for only Olympic years
+economy <- filter(economy, year >= 1972 & year %% 2 == 0)
+#Weighted medal total, Gold = 3, Silver = 2, Bronze = 1
+medals <- medals |> 
+  mutate(weighted_total = gold*3 + silver *2 + bronze)
+renamed <- economy |> 
+  mutate(country = ifelse(country == "Czechoslovakia (Former)", "Czechoslovakia",
+                   ifelse(country == "D.P.R. of Korea", "Democratic People's Republic of Korea",
+                   ifelse(country == "Ethiopia (Former)", "Ethiopia",
+                   ifelse(country == "China, Hong Kong SAR", "Hong Kong, China",
+                   ifelse(country == "Iran (Islamic Republic of)", "Islamic Republic of Iran",
+                   ifelse(country == "Saudi Arabia", "Kingdom of Saudi Arabia",
+                   ifelse(country == "Former Netherlands Antilles", "Netherlands Antilles",
+                   ifelse(country == "China", "People's Republic of China",
+                   ifelse(country == "USSR (Former)", "Soviet Union",
+                   ifelse(country == "USSR (Former)", "Soviet Union",
+                   ifelse(country == "Bahamas", "The Bahamas",
+                          ifelse(country == "United Kingdom", "Great Britain",
+                          ifelse(country == "Viet nam", "Vietnam",country)
+                   )))))))
+                          )           
+                          )        
+                          )
+                          )))
+merged <- merge(renamed, medals, by = c("country", "year"))
+```
