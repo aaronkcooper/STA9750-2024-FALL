@@ -1,5 +1,7 @@
 ---
 title: "The Olympic Advantage"
+format: html
+runtime: shiny
 ---
 
 ## The Economics of the Olympics
@@ -9,12 +11,16 @@ When asking the question, "What leads to success at the Olympics?", economic fac
 ```{r output = FALSE}
 #| code-fold: true
 library(tidyverse)
+library(DT)
 library(janitor)
 library(FSA)
 library(car)
 library(lme4)
 library(MuMIn)
 library(MASS)
+library(shiny)
+library(plotly)
+options(warn=-1)
 economy <- read_csv("Global Economy Indicators.csv")
 economy <- economy |> 
   clean_names()
@@ -48,4 +54,118 @@ renamed <- economy |>
                           )
                           )))
 merged <- merge(renamed, medals, by = c("country", "year"))
+```
+
+## Datasets
+
+To help answer this question I merged economic indicators of each country by year to our overarching olympic dataset. This isn't a perfect merge as some Olympic teams dont exactly match their political entities but this should give us a pretty good idea. We can take a quick look at the working dataset which should give us an idea of what we might find when we dive deeper.
+
+```{r}
+#| code-fold: true
+merged |> 
+  arrange(desc(total)) |> 
+  dplyr::select(country, year, edition, total, gross_domestic_product_gdp) |> 
+   DT::datatable()
+```
+
+To no surprise the United States and the Soviet Union consistently top the list, which were both economic powerhouses in their respective Olympics. This might also say something to the effect of the emphasis each country placed on doing well in the Olympics especially during the Cold War. Regardless its important to note that each year has its own unique slate of events and overall global economic output. To help address this, instead of analyzing based off of raw numbers, I am utilizing a ranked approach. So for each Olympic event countries will be ranked on both GDP output, population and medal output. I.e., the top medal earner for an Olympic event will be ranked 1 and the top GDP producer will be ranked 1 for that metric respectively.
+
+## Why GDP?
+
+I think its important to at least go over why GDP was selected as the primary metric. Along with population which is heavily correlated to GDP output (more people leads to on average more economic production), it helps capture the overall economic strength of a country in a simple metric. As opposed to GDP per Capita which normalizes GDP based on population, this better captures the economic might that larger countries generally have. It also helps negate the factor that while China has a compartively low GDP per Capita it still out produces every country now other the the United States. Conversely while a country like Luxembourg has one of the highest GDP per Capitas, it is a tiny country with nowhere near the resources of a bigger economy like Germany for example. GDP correctly measures the size of a countries economy which is what were primarily concerned with here.
+
+## Ranked Analysis
+
+```{r}
+#| code-fold: true
+ranking <- merged |> 
+  group_by(year, edition) |> 
+  mutate(gdp_rank = rank(-gross_domestic_product_gdp),
+         medal_rank = rank(-total),
+         weight_rank = rank(-weighted_total),
+         pop_rank = rank(-population))
+ranking |> 
+  arrange(medal_rank, gdp_rank) |> 
+  dplyr::select(country, year, edition, medal_rank, gdp_rank) |> 
+   DT::datatable()
+```
+
+```{r message = FALSE}
+#| code-fold: true
+ggplot(ranking, aes(x=gdp_rank, y=medal_rank)) +
+  geom_point(color="blue") +
+  geom_smooth(method="loess", color="red", se=FALSE) +
+  labs(title="GDP Rank vs Medal Rank",
+       x="GDP Rank (Wealthier → Lower)",
+       y="Medal Rank (More Medals → Lower)") +
+  theme_minimal()
+```
+
+When comparing the GDP ranks with the medal ranks, the general assumption does seem to fit. Higher GDP producers tend to dominate the top ranks of medal earners. The spread is more consistent near the first quadrant of data, i.e. top 25 medal earners and top 25 GDP producers and then spreads out more as the ranks get higher. This can be illustrated in the graphic above, when fitting the data to a LOESS regression, there is a pretty strong linear relationship at the start that gets less strong as the ranks decrease.
+
+```{r}
+#| code-fold: true
+ranking <- ranking |> 
+  mutate(gdp_group = case_when(
+    gdp_rank <= 10 ~ "Top 10",
+    gdp_rank <= 50 &  gdp_rank > 10 ~ "11-50",
+    TRUE ~ "Below 50"
+  ))
+
+ggplot(ranking, aes(x=gdp_group, y=medal_rank)) +
+  geom_boxplot() +
+  labs(title="Medal Rank Distribution by GDP Group") +
+  theme_minimal()
+
+```
+
+When conducting a group analysis, the effect of GDP is perhaps more evident. Separating countries into three groups, Top 10 in GDP, the next 40 and the bottom producers, the general ranges fall very in line with their medal ranks. Of course there are outliers and exceptions but this boxplot does help visualize the heavy relation between top economic countries and success at the Olympics.
+
+```{r echo = FALSE}
+#| code-fold: true
+shinyApp(
+  ui = fluidPage(
+    sidebarLayout(
+      sidebarPanel(
+        selectInput("year", "Select Year:",
+                    choices = c("All", unique(ranking$year)), selected = "All"),
+        selectInput("country", "Select Country:",
+                    choices = c("All", unique(ranking$country)), selected = "All")
+      ),
+      mainPanel(
+        plotlyOutput("interactivePlot")
+      )
+    )
+  ),
+  server = function(input, output) {
+    # Reactive filtering
+    filtered_data <- reactive({
+      data <- ranking
+      if (input$year != "All") {
+        data <- data %>% filter(year == input$year)
+      }
+      if (input$country != "All") {
+        data <- data %>% filter(country == input$country)
+      }
+      return(data)
+    })
+    
+    # Plotly output
+    output$interactivePlot <- renderPlotly({
+      data <- filtered_data()
+      p <- ggplot(data, aes(x = gdp_rank, y = medal_rank, 
+                            text = paste("Country:", country, "<br>",
+                                         "Year:", year, "<br>",
+                                         "GDP Rank:", gdp_rank, "<br>",
+                                         "Medal Rank:", medal_rank))) +
+        geom_point(color = "blue") +
+        labs(title = "GDP Rank vs Medal Rank",
+             x = "GDP Rank (Wealthier → Lower)",
+             y = "Medal Rank (More Medals → Lower)") +
+        theme_minimal()
+      
+      ggplotly(p, tooltip = "text")
+    })
+  }
+)
 ```
