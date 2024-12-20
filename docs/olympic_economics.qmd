@@ -1,10 +1,10 @@
 ---
 title: "The Olympic Advantage"
-format: html
-runtime: shiny
 ---
 
 ## The Economics of the Olympics
+
+*Aaron Cooper*
 
 When asking the question, "What leads to success at the Olympics?", economic factors may not immediately jump to mind. However, not only is this a big indicative factor to individual countries success, but plays a huge role overall in the game of winning the Olympics. A higher economic output leads to greater potential investment in sports and training facilities for athletes. **Potential** being the key word here, as of course its up to each country how they allocate their resources. In this analysis we are going to take a deep dive into this question of how big of an impact Economic factors play in the grand spectacle that is the Olympics.
 
@@ -18,8 +18,8 @@ library(car)
 library(lme4)
 library(MuMIn)
 library(MASS)
-library(shiny)
 library(plotly)
+library(shiny)
 options(warn=-1)
 economy <- read_csv("Global Economy Indicators.csv")
 economy <- economy |> 
@@ -121,51 +121,152 @@ ggplot(ranking, aes(x=gdp_group, y=medal_rank)) +
 
 When conducting a group analysis, the effect of GDP is perhaps more evident. Separating countries into three groups, Top 10 in GDP, the next 40 and the bottom producers, the general ranges fall very in line with their medal ranks. Of course there are outliers and exceptions but this boxplot does help visualize the heavy relation between top economic countries and success at the Olympics.
 
-```{r echo = FALSE}
+```{r output = FALSE}
 #| code-fold: true
-shinyApp(
-  ui = fluidPage(
-    sidebarLayout(
-      sidebarPanel(
-        selectInput("year", "Select Year:",
-                    choices = c("All", unique(ranking$year)), selected = "All"),
-        selectInput("country", "Select Country:",
-                    choices = c("All", unique(ranking$country)), selected = "All")
-      ),
-      mainPanel(
-        plotlyOutput("interactivePlot")
-      )
-    )
-  ),
-  server = function(input, output) {
-    # Reactive filtering
-    filtered_data <- reactive({
-      data <- ranking
-      if (input$year != "All") {
-        data <- data %>% filter(year == input$year)
-      }
-      if (input$country != "All") {
-        data <- data %>% filter(country == input$country)
-      }
-      return(data)
-    })
-    
-    # Plotly output
-    output$interactivePlot <- renderPlotly({
-      data <- filtered_data()
-      p <- ggplot(data, aes(x = gdp_rank, y = medal_rank, 
-                            text = paste("Country:", country, "<br>",
-                                         "Year:", year, "<br>",
-                                         "GDP Rank:", gdp_rank, "<br>",
-                                         "Medal Rank:", medal_rank))) +
-        geom_point(color = "blue") +
-        labs(title = "GDP Rank vs Medal Rank",
-             x = "GDP Rank (Wealthier → Lower)",
-             y = "Medal Rank (More Medals → Lower)") +
-        theme_minimal()
+# Define the UI for the application
+ui <- fluidPage(
+  titlePanel("Interactive GDP Rank vs Medal Rank"),
+  
+  sidebarLayout(
+    sidebarPanel(
+      # Dropdown for selecting country
+      selectInput("country", "Select Country", 
+                  choices = c("All Countries", unique(ranking$country)), 
+                  selected = "All Countries"),
       
-      ggplotly(p, tooltip = "text")
-    })
-  }
+      # Slider for selecting the year
+      selectInput("edition", "Select Olympic Edition", 
+                  choices = c("All Editions", sort(unique(ranking$edition))), 
+                  selected = "All Editions")
+    ),
+    
+    mainPanel(
+      plotlyOutput("interactive_plot")
+    )
+  )
 )
+
+# Define the server logic for the application
+server <- function(input, output) {
+  
+  # Reactive expression to filter the data based on user input
+  filtered_data <- reactive({
+    if (input$country == "All Countries") {
+      country_data <- ranking
+    } else {
+      country_data <- ranking |>  filter(country == input$country)
+    }
+    
+    # If "All Editions" is selected, use all editions; otherwise, filter by selected edition
+    if (input$edition == "All Editions") {
+      filtered <- country_data
+    } else {
+      filtered <- country_data |>  filter(edition == input$edition)
+    }
+    return(filtered)
+  })
+  
+  # Generate the plot
+  output$interactive_plot <- renderPlotly({
+    plot_data <- filtered_data()
+    
+    # Create the plot with ggplot
+    p <- ggplot(plot_data, aes(x = gdp_rank, y = medal_rank)) +
+      geom_point(color = "blue", aes(text = paste("Country:", country, 
+                                            "<br>GDP Rank:", gdp_rank, 
+                                            "<br>Medal Rank:", medal_rank))) +
+      geom_smooth(method = "loess", color = "red", se = FALSE) +
+      labs(title = "GDP Rank vs Medal Rank",
+           x = "GDP Rank (Wealthier → Lower)",
+           y = "Medal Rank (More Medals → Lower)") +
+      theme_minimal()
+    
+    # Convert to plotly for interactivity
+    ggplotly(p, tooltip = "text")
+  })
+}
+
+# Run the application
+shinyApp(ui = ui, server = server)
+
+
 ```
+
+<iframe src="https://aaronkcooper.shinyapps.io/olympic_economics/" width="125%" height="600px" style="border:none;">
+
+</iframe>
+
+With this interactive graph you can dive deeper into the specific country outputs and how the trends have differed per competition. Feel free to play around and see how the relation progresses over time and how some countries are unique outliers.
+
+## Population
+
+The other metric I considered is countrys total population. Of course this should be directly correlated to a countrys GDP, as a higher population leads to more potential yield in the economy although its not always one to one. Logically one might think as a population is higher the chances of producing olympic athletes must also be higher with a larger pool of candidates.
+
+```{r}
+#| code-fold: true
+ranking <- ranking |> 
+  mutate(winter = ifelse(grepl("Summer", edition), 0, 1))
+ggplot(ranking, aes(x = pop_rank, y = medal_rank, color = factor(winter))) +
+  geom_point(alpha = 0.6) +
+  labs(title = "Medal Rank vs Population Rank, Colored by Winter Olympics Participation",
+       x = "Population Rank", y = "Medal Rank", color = "Winter Olympics") +
+  theme_minimal()
+```
+
+As can be seen in the data, the relationship isnt as strong but exhibits a very similar pattern to GDP. This just further highlights the impact of raw economic output by country has on the Olympics. It is interesting to note that far fewer countries tend to participate in the Winter editions. The winter editions also vary wildly within their smaller sections, implying the higher cost of entry inherent of winter sports negates the GDP factor to some degree albeit it is still present.
+
+## Country Factor + Modeling
+
+Ultimately what ends up being the biggest factor that might cause a county to under perform or over perform their raw GDP is their unique characteristics inherent. of each country. Not all countries value sports or the Olympics the same which may cause some countries to push above or below their weight.
+
+```{r}
+#| code-fold: true
+model_mixed <- lmer(medal_rank ~ poly(gdp_rank, 2) + poly(pop_rank, 2) + winter + (1 | country), 
+                    data = ranking)
+random_intercepts <- ranef(model_mixed)$country
+ranking$predicted_medal_rank <- predict(model_mixed, newdata = ranking)
+ranking$adjusted_medal_rank <- ranking$predicted_medal_rank + random_intercepts[ranking$country, ]
+ranking$diff_medal_rank <- ranking$adjusted_medal_rank - ranking$predicted_medal_rank
+
+
+agg_data <- ranking |> 
+  group_by(country) |> 
+  summarise(mean_diff_medal_rank = mean(diff_medal_rank, na.rm = TRUE)) |> 
+  ungroup()  
+
+p <- ggplot(agg_data, aes(x = reorder(country, mean_diff_medal_rank), y = mean_diff_medal_rank)) +
+  geom_bar(stat = "identity", 
+           aes(text = paste("Country:", country, 
+                            "<br>Mean Difference:", round(mean_diff_medal_rank, 2))), 
+           width = 0.7, fill = ifelse(agg_data$mean_diff_medal_rank > 0, "blue", "red")) +
+  coord_flip() +
+  scale_y_continuous(expand = expansion(mult = c(0, 0.05))) +  # Adjust y-axis padding
+  labs(
+    title = "Mean Effect of Random Intercepts on Medal Rank by Country",
+    x = "Country",
+    y = "Mean Difference in Predicted Medal Rank"
+  ) +
+  theme_minimal()
+
+interactive_plot <- ggplotly(p, tooltip = "text") |> 
+  layout(
+    width = 800,  
+    height = 1400  
+  )
+interactive_plot
+```
+
+To capture this effect, a mixed effect model was run to assess the effects certain countries had on their olympic performances. If you explore the graph above you will see the countries in blue with a positive difference on average underperform based on their GDP. While countries in the red tend to overperform their GDP. In mixed-effects models, random intercepts represent the variation in the response variable (e.g., medal_rank) that is attributed to differences between the groups or levels of the random factor (e.g., country in your model). They capture how much each group (in this case, each country) deviates from the global average (the overall fixed effect) in the intercept.
+
+```{r}
+#| code-fold: true
+r_squared <- r.squaredGLMM(model_mixed)
+print(paste("Marginal R-squared:", round(r_squared[1], 3)))
+print(paste("Conditional R-squared:", round(r_squared[2], 3)))
+```
+
+When we judge the model, we see that the Marginal R squared is .49 inidcating a strong relationship between our indicators (population, GDP, and winter vs no winter olympics). However when conditioning on the specific country the R squared is .845 which is very high. This tells us that country specific factors plays a significant role in determining Olympic Success. For example a country like Saudi Arabia significantly under performs its GDP, which can be explained to a lack of investment in sports in that country versus other things like religion. On the other end New Zealand significantly outperforms its GDP indicating the opposite, a high importance is places on sports and athleticism in that country.
+
+## Conclusion
+
+Throughout this analysis we have dug into the question of does money buy medals? Well in some cases the answer is yes. More affluent countries perform by in large far better then poorer countries. Now that doesn't mean its citizens are well off at all, we are just measuring based on raw GDP which is no indication of quality of life or GDP per capita. Luxembourg while top in GDP per capita is not a significant contributor in the Olympics. We are really just analyzing the [**size**]{.underline} of the economy versus how many medals that country earns. Due to higher populations and more ability to invest in athletics those countries do perform better however there are some outliers. Winter Olympics especially, which requires a significant investment to compete in, evens the playing field more and lower GDP countries. comparatively like Austria and Norway are able to shine. When it comes down to it, Economy alone while an indicator, can not predict Olympic success alone. There are clearly unique factors per country that determines its success or lack thereof. After all if you have alot of money but choose to fuel it all towards National Defense, it probably wont lead to a thriving internal sports culture.

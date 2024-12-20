@@ -1,0 +1,10 @@
+name: docs
+title:
+username: aaronkcooper
+account: aaronkcooper
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 13625169
+bundleId: 9547001
+url: https://aaronkcooper.shinyapps.io/docs/
+version: 1
